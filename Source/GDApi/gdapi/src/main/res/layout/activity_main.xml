@@ -1,0 +1,74 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingBottom="@dimen/activity_vertical_margin"
+    android:paddingLeft="@dimen/activity_horizontal_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+    android:paddingTop="@dimen/activity_vertical_margin"
+    tools:context=".MainActivity" >
+
+    <!--<Button-->
+        <!--android:id="@+id/btnPlay"-->
+        <!--android:layout_width="wrap_content"-->
+        <!--android:layout_height="wrap_content"-->
+        <!--android:layout_alignBaseline="@+id/btnVisit"-->
+        <!--android:layout_alignBottom="@+id/btnVisit"-->
+        <!--android:layout_toRightOf="@+id/btnVisit"-->
+        <!--android:text="Play" />-->
+
+    <!--<Button-->
+        <!--android:id="@+id/btnVisit"-->
+        <!--android:layout_width="wrap_content"-->
+        <!--android:layout_height="wrap_content"-->
+        <!--android:layout_alignBaseline="@+id/btnInit"-->
+        <!--android:layout_alignBottom="@+id/btnInit"-->
+        <!--android:layout_toRightOf="@+id/btnInit"-->
+        <!--android:text="Visit" />-->
+
+    <!--<Button-->
+        <!--android:id="@+id/btnCustom"-->
+        <!--android:layout_width="wrap_content"-->
+        <!--android:layout_height="wrap_content"-->
+        <!--android:layout_below="@+id/btnInit"-->
+        <!--android:layout_marginTop="16dp"-->
+        <!--android:text="Custom" />-->
+
+    <Button
+        android:id="@+id/btnInter"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Interstatial"
+        android:layout_alignBaseline="@+id/btnRequestBanner"
+        android:layout_alignBottom="@+id/btnRequestBanner"
+        android:layout_centerHorizontal="true" />
+
+    <Button
+        android:id="@+id/btnRequestBanner"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="181dp"
+        android:text="Banner"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentLeft="true" />
+
+    <Button
+        android:id="@+id/btnInit"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="44dp"
+        android:text="Init"
+        android:layout_alignParentTop="true"
+        android:layout_toLeftOf="@+id/btnInter" />
+
+    <!--<Button-->
+        <!--android:id="@+id/btnRequestIma"-->
+        <!--android:layout_width="wrap_content"-->
+        <!--android:layout_height="wrap_content"-->
+        <!--android:layout_marginTop="82dp"-->
+        <!--android:text="RequestIma"-->
+        <!--android:layout_below="@+id/btnInter"-->
+        <!--android:layout_alignParentLeft="true"-->
+        <!--android:layout_marginLeft="46dp" />-->
+
+</RelativeLayout>
