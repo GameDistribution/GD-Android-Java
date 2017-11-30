@@ -6,5 +6,8 @@ package com.gd.analytics;
 
 public abstract class GDCallback {
 
-    public void callback(Object level){};
+    public void callback(Object level) {
+    }
+
+    ;
 }
