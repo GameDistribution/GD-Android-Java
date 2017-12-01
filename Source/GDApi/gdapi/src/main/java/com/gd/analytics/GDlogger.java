@@ -3,6 +3,7 @@ package com.gd.analytics;
 import android.app.Activity;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
+import android.support.annotation.Nullable;
 import android.util.Log;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -129,18 +130,6 @@ public class GDlogger {
             gDad.setAdListener(gDadListener);
     }
 
-    public static void addTestDevice(String deviceID) {
-        if (gDad != null)
-            gDad.setDeviceID(deviceID);
-    }
-
-    public static String getTestDevice() {
-        if (gDad != null)
-            return gDad.getDeviceID();
-        else
-            return null;
-    }
-
     /**
      * GDlogger hides banner
      */
@@ -168,10 +157,6 @@ public class GDlogger {
             return false;
         }
 
-    }
-
-    public static boolean isInternetAvailable() {
-        return GDutils.internetConnectionAvailable();
     }
 
 }

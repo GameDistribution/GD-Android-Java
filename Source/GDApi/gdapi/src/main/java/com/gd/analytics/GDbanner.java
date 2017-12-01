@@ -21,7 +21,6 @@ class GDbanner {
     protected static void init() {
 
         if(GDstatic.enable) {
-
             GDHttpRequest.sendHttpRequest(GDlogger.mContext, GDstatic.GAME_API_URL, Request.Method.GET, null, new GDHttpCallback() {
                 @Override
                 public void onSuccess(JSONObject data) {
@@ -51,13 +50,10 @@ class GDbanner {
                     GDutils.log("Something went wrong fetching json game data.");
                 }
             });
-
-
         }
     }
 
     protected static void ShowBanner(String args) {
-
 
         Gson gson = new Gson();
         final GDshowObj gDshowObj;

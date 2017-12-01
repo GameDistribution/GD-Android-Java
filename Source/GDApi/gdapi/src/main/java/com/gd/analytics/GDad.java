@@ -35,7 +35,6 @@ public class GDad {
     private FrameLayout rootview;
     private RelativeLayout relativeLayoutContainer;
     private boolean bannerActive = false;
-    private String deviceID = null;
     private boolean isCordovaPlugin = false;
 
     public void init(Activity mContext) {
@@ -90,9 +89,6 @@ public class GDad {
         PublisherAdRequest.Builder builder = new PublisherAdRequest.Builder();
         builder.addNetworkExtrasBundle(AdMobAdapter.class, cust_params);
 
-        if (this.deviceID != null) {
-            builder.addTestDevice(this.deviceID);
-        }
         adRequest = builder.build();
         handleBannerParams(size, alignment, position);
 
@@ -177,9 +173,6 @@ public class GDad {
         PublisherAdRequest.Builder builder = new PublisherAdRequest.Builder();
         builder.addNetworkExtrasBundle(AdMobAdapter.class, cust_params);
 
-        if (this.deviceID != null) {
-            builder.addTestDevice(this.deviceID);
-        }
         adRequest = builder.build();
 
         if (this.isCordovaPlugin) {
@@ -324,39 +317,6 @@ public class GDad {
             requestBanner(gDshowObj.size, gDshowObj.alignment, gDshowObj.position);
         }
 
-    }
-
-    public String getDeviceID() {
-        String android_id = Settings.Secure.getString(getmContext().getContentResolver(), Settings.Secure.ANDROID_ID);
-
-        if (android_id != null && android_id.length() > 0) {
-            return md5(android_id).toUpperCase();
-        } else {
-            return md5("emulator").toUpperCase();
-        }
-    }
-
-    public void setDeviceID(String deviceID) {
-        this.deviceID = deviceID;
-    }
-
-    public String md5(String s) {
-        try {
-            // Create MD5 Hash
-            MessageDigest digest = java.security.MessageDigest.getInstance("MD5");
-            digest.update(s.getBytes());
-            byte messageDigest[] = digest.digest();
-
-            // Create Hex String
-            StringBuffer hexString = new StringBuffer();
-            for (int i = 0; i < messageDigest.length; i++)
-                hexString.append(Integer.toHexString(0xFF & messageDigest[i]));
-            return hexString.toString();
-
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        }
-        return "";
     }
 
     public void destroyBanner() {
