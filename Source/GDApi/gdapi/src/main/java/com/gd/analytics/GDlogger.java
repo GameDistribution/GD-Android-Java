@@ -94,13 +94,6 @@ public class GDlogger {
         GDstatic.debug = enable;
     }
 
-    private static int incPlay() {
-        int play = GDutils.getCookie("play");
-        play++;
-        GDutils.setCookie("play", play);
-        return play;
-    }
-
     /**
      * GDlogger shows banner
      */
