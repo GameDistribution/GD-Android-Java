@@ -1,9 +1,6 @@
 package com.gd.analytics;
 
 import android.app.Activity;
-import android.content.SharedPreferences;
-import android.preference.PreferenceManager;
-import android.support.annotation.Nullable;
 import android.util.Log;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -13,8 +10,9 @@ import com.google.android.gms.common.GoogleApiAvailability;
 public class GDlogger {
 
     static Activity mContext;
-    static SharedPreferences appSharedPrefs;
     static GDad gDad;
+    static boolean isCordovaPlugin = false;
+
 
     /**
      * Initialize Game Distribution Java API
@@ -37,9 +35,6 @@ public class GDlogger {
         } else {
             mContext = _mContext;
             gDad = new GDad();
-            gDad.init(GDlogger.mContext);
-
-            appSharedPrefs = PreferenceManager.getDefaultSharedPreferences(mContext.getApplicationContext());
 
             String[] gameserver = regId.toLowerCase().split("-");
             GDstatic.serverId = gameserver[5];
@@ -54,36 +49,11 @@ public class GDlogger {
     }
 
     public static void init(String gameId, String regId, Activity _mContext, boolean isCordovaPlugin) {
-
         if (isCordovaPlugin) {
-            mContext = _mContext;
-
-            if (!checkPlayServices(_mContext)) {
-                GDutils.log("Google play services out of date. Update it in order to use GDApi properly.");
-            }
-
-            if (GDstatic.enable) {
-                GDutils.log("API is already Initilized.");
-            } else {
-                mContext = _mContext;
-                gDad = new GDad();
-                gDad.init(GDlogger.mContext, true);
-
-                appSharedPrefs = PreferenceManager.getDefaultSharedPreferences(mContext.getApplicationContext());
-
-                String[] gameserver = regId.toLowerCase().split("-");
-                GDstatic.serverId = gameserver[5];
-                GDstatic.regId = gameserver[0] + "-" + gameserver[1] + "-" + gameserver[2] + "-" + gameserver[3] + "-" + gameserver[4];
-                GDstatic.gameId = gameId;
-                GDstatic.enable = true;
-
-                GDbanner.init();
-                GDutils.log("Game Distribution Android API Init");
-            }
-        } else {
-            init(gameId, regId, _mContext);
+            GDlogger.isCordovaPlugin = true;
         }
 
+        init(gameId, regId, _mContext);
 
     }
 
@@ -92,6 +62,13 @@ public class GDlogger {
      */
     public static void debug(Boolean enable) {
         GDstatic.debug = enable;
+    }
+
+    /**
+     * GDlogger enables test ads
+     */
+    public static void EnableTestAds(Boolean test) {
+        GDstatic.testAds = test;
     }
 
     /**

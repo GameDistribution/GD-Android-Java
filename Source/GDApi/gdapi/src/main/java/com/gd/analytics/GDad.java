@@ -2,7 +2,6 @@ package com.gd.analytics;
 
 import android.app.Activity;
 import android.os.Bundle;
-import android.provider.Settings;
 import android.view.Gravity;
 import android.widget.FrameLayout;
 import android.widget.RelativeLayout;
@@ -14,9 +13,6 @@ import com.google.android.gms.ads.doubleclick.PublisherAdRequest;
 import com.google.android.gms.ads.doubleclick.PublisherAdView;
 import com.google.android.gms.ads.doubleclick.PublisherInterstitialAd;
 import com.google.gson.Gson;
-
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 
 
 /**
@@ -30,24 +26,43 @@ public class GDad {
     private PublisherInterstitialAd mInterstitialAd;
     private Activity mContext;
     private String mUnitId;
-    private String cordovaAdxUnitId = "ca-mb-app-pub-5192618204358860/8119020012";
     private PublisherAdView publisherAdView;
     private FrameLayout rootview;
     private RelativeLayout relativeLayoutContainer;
     private boolean bannerActive = false;
-    private boolean isCordovaPlugin = false;
 
     public void init(Activity mContext) {
         setmContext(mContext);
         setRootview((FrameLayout) mContext.findViewById(android.R.id.content));
         initBannerObject();
+        if(GDstatic.testAds){
+            this.setmUnitId(GDstatic.testAdxUnitId);
+        }
+        else{
+            this.setmUnitId(GDstatic.adUnit);
+        }
+
+        if(GDGameData.preRoll){
+            requestInterstitial();
+        }
     }
 
     public void init(Activity mContext, boolean isCordovaPlugin) {
         if (isCordovaPlugin) {
-            this.isCordovaPlugin = true;
+            if(GDstatic.testAds){
+                this.setmUnitId(GDstatic.testAdxUnitId);
+            }
+            else{
+                this.setmUnitId(GDstatic.cordovaAdxUnitId);
+            }
+
             setmContext(mContext);
             // in cordova plugin, there will be no banner ads.
+
+            if(GDGameData.preRoll){
+                requestInterstitial();
+            }
+
         } else {
             init(mContext);
         }
@@ -80,10 +95,10 @@ public class GDad {
     }
 
     private void requestBanner(String size, String alignment, String position) {
+
         Bundle cust_params = new Bundle();
         cust_params.putString("apptype", "android");
         cust_params.putString("appid", GDstatic.gameId);
-        cust_params.putString("a", GDstatic.affiliateId);
 
         PublisherAdRequest adRequest;
         PublisherAdRequest.Builder builder = new PublisherAdRequest.Builder();
@@ -175,11 +190,8 @@ public class GDad {
 
         adRequest = builder.build();
 
-        if (this.isCordovaPlugin) {
-            mInterstitialAd.setAdUnitId(cordovaAdxUnitId);
-        } else {
-            mInterstitialAd.setAdUnitId(getmUnitId());
-        }
+        mInterstitialAd.setAdUnitId(getmUnitId());
+
         mInterstitialAd.setAdListener(new AdListener() {
             @Override
             public void onAdClosed() {

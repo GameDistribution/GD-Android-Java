@@ -12,6 +12,9 @@ class GDstatic {
     protected static String gameId;
     protected static boolean reqBannerEnabled = true;
     protected static boolean reqInterstitialEnabled = true;
-    protected static String adUnit;
+    protected static String adUnit = "ca-app-pub-3940256099942544/4411468910"; // currently it is test.
+    protected static String testAdxUnitId = "ca-app-pub-3940256099942544/4411468910";
+    protected static String cordovaAdxUnitId = "ca-mb-app-pub-5192618204358860/8119020012";
+    protected static boolean testAds = false;
     protected static String affiliateId;
 }

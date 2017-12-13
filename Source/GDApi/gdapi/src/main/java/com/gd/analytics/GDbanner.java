@@ -4,15 +4,8 @@ import com.android.volley.Request;
 import com.android.volley.VolleyError;
 import com.google.gson.Gson;
 
-import org.apache.http.Header;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.xmlpull.v1.XmlPullParser;
-import org.xmlpull.v1.XmlPullParserException;
-import org.xmlpull.v1.XmlPullParserFactory;
-
-import java.io.IOException;
-import java.io.StringReader;
 
 class GDbanner {
 
@@ -21,7 +14,8 @@ class GDbanner {
     protected static void init() {
 
         if(GDstatic.enable) {
-            GDHttpRequest.sendHttpRequest(GDlogger.mContext, GDstatic.GAME_API_URL, Request.Method.GET, null, new GDHttpCallback() {
+            String url = GDstatic.GAME_API_URL + '/' + GDstatic.gameId + "?domain=test.api";
+            GDHttpRequest.sendHttpRequest(GDlogger.mContext, url, Request.Method.GET, null, new GDHttpCallback() {
                 @Override
                 public void onSuccess(JSONObject data) {
 
@@ -36,6 +30,12 @@ class GDbanner {
                             GDGameData.preRoll = game.getBoolean("preRoll");
                             GDGameData.timeAds = game.getInt("timeAds");
                             GDGameData.title = game.getString("title");
+
+                            GDutils.log(data.toString());
+
+                            GDlogger.gDad.init(GDlogger.mContext,GDlogger.isCordovaPlugin);
+
+
                         }
 
                     } catch (JSONException e) {
@@ -63,7 +63,6 @@ class GDbanner {
         if (GDGameData.enableAds && gDshowObj._key != null && gDshowObj._key.equals("preroll") && GDlogger.gDad != null) {
 
             if (GDGameData.preRoll) {
-                GDlogger.gDad.setmUnitId(GDstatic.adUnit);
                 GDlogger.gDad.showBanner(args);
             } else {
                 if (GDlogger.gDad.devListener != null) {
@@ -76,7 +75,6 @@ class GDbanner {
 
                 if (gDshowObj.isInterstitial) {
                     if (GDstatic.reqInterstitialEnabled) {
-                        GDlogger.gDad.setmUnitId(GDstatic.adUnit);
                         GDlogger.gDad.showBanner(args);
                         adInterstitialTimer = null;
                         setAdTimer(true); // inter timer
@@ -86,7 +84,6 @@ class GDbanner {
                     }
                 } else {
                     if (GDstatic.reqBannerEnabled) {
-                        GDlogger.gDad.setmUnitId(GDstatic.adUnit);
                         GDlogger.gDad.showBanner(args);
                         adBannerTimer = null;
                         setAdTimer(false); // banner timer
