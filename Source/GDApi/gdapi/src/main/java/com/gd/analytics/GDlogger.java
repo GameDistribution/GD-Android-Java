@@ -3,10 +3,6 @@ package com.gd.analytics;
 import android.app.Activity;
 import android.util.Log;
 
-import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.GoogleApiAvailability;
-
-
 public class GDlogger {
 
     static Activity mContext;
@@ -25,11 +21,6 @@ public class GDlogger {
     public static void init(String gameId, String regId, Activity _mContext) {
 
         mContext = _mContext;
-
-        if (!checkPlayServices(_mContext)) {
-            GDutils.log("Google play services out of date. Update it in order to use GDApi properly.");
-        }
-
         if (GDstatic.enable) {
             GDutils.log("API is already Initialized.");
         } else {
@@ -67,8 +58,8 @@ public class GDlogger {
     /**
      * GDlogger enables test ads
      */
-    public static void EnableTestAds(Boolean test) {
-        GDstatic.testAds = test;
+    public static void enableTestAds() {
+        GDstatic.testAds = true;
     }
 
     /**
@@ -107,26 +98,6 @@ public class GDlogger {
         if (GDstatic.enable) {
             //	GDbanner.hide();
         }
-    }
-
-    public static boolean checkPlayServices(Activity activity) {
-        try {
-            final int PLAY_SERVICES_RESOLUTION_REQUEST = 9000;
-
-            GoogleApiAvailability googleAPI = GoogleApiAvailability.getInstance();
-            int result = googleAPI.isGooglePlayServicesAvailable(activity);
-            if (result != ConnectionResult.SUCCESS) {
-                if (googleAPI.isUserResolvableError(result)) {
-                    googleAPI.getErrorDialog(activity, result,
-                            PLAY_SERVICES_RESOLUTION_REQUEST).show();
-                }
-                return false;
-            }
-            return true;
-        } catch (Exception e) {
-            return false;
-        }
-
     }
 
 }
