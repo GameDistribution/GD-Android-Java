@@ -7,21 +7,11 @@ package com.gd.analytics;
 public abstract class GDadListener {
     public void onBannerClosed() {
     }
-
-    ;
-
     public void onBannerStarted() {
     }
-
-    ;
-
     public void onBannerRecieved(GDEvent data) {
     }
-
-    ;
-
     public void onBannerFailed(String msg) {
     }
 
-    ;
 }

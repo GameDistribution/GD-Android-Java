@@ -9,7 +9,6 @@ public class GDlogger {
     static GDad gDad;
     static boolean isCordovaPlugin = false;
 
-
     /**
      * Initialize Game Distribution Java API
      *
@@ -17,7 +16,6 @@ public class GDlogger {
      * @param    regId        Your game reg id
      * @param    _mContext        Should be Activity to detect main activity
      */
-
     public static void init(String gameId, String regId, Activity _mContext) {
 
         mContext = _mContext;

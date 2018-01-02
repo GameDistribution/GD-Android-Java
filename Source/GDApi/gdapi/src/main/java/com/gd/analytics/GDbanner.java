@@ -60,7 +60,7 @@ class GDbanner {
         gDshowObj = gson.fromJson(args, GDshowObj.class);
 
 
-        if (GDGameData.enableAds && gDshowObj._key != null && gDshowObj._key.equals("preroll") && GDlogger.gDad != null) {
+        if ((GDGameData.enableAds || GDstatic.testAds) && gDshowObj._key != null && gDshowObj._key.equals("preroll") && GDlogger.gDad != null) {
 
             if (GDGameData.preRoll) {
                 GDlogger.gDad.showBanner(args);
@@ -71,23 +71,30 @@ class GDbanner {
             }
         } else { // so this is for midroll request
 
-            if (GDGameData.enableAds && GDGameData.timeAds != 0 && GDlogger.gDad != null) {
+            if ((GDstatic.testAds || (GDGameData.enableAds && GDGameData.timeAds != 0)) && GDlogger.gDad != null) {
 
                 if (gDshowObj.isInterstitial) {
                     if (GDstatic.reqInterstitialEnabled) {
                         GDlogger.gDad.showBanner(args);
                         adInterstitialTimer = null;
-                        setAdTimer(true); // inter timer
-                        GDstatic.reqInterstitialEnabled = false;
+                        if(!GDstatic.testAds){
+                            setAdTimer(true); // inter timer
+                            GDstatic.reqInterstitialEnabled = false;
+                        }
+
                     } else {
                         GDutils.log("You can not invoke 'ShowBanner()' within " + GDGameData.timeAds + " min(s).");
                     }
-                } else {
+                }
+                else {
                     if (GDstatic.reqBannerEnabled) {
                         GDlogger.gDad.showBanner(args);
                         adBannerTimer = null;
-                        setAdTimer(false); // banner timer
-                        GDstatic.reqBannerEnabled = false;
+                        if(!GDstatic.testAds){
+                            setAdTimer(true); // banner timer
+                            GDstatic.reqBannerEnabled = false;
+                        }
+
                     } else {
                         GDutils.log("You can not invoke 'ShowBanner()' within " + GDGameData.timeAds + " min(s).");
                     }
