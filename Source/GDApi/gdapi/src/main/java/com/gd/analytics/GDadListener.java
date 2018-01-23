@@ -5,6 +5,7 @@ package com.gd.analytics;
  */
 
 public abstract class GDadListener {
+
     public void onBannerClosed() {
     }
     public void onBannerStarted() {
@@ -12,6 +13,10 @@ public abstract class GDadListener {
     public void onBannerRecieved(GDEvent data) {
     }
     public void onBannerFailed(String msg) {
+    }
+    public void onAPIReady(){
+    }
+    public void onAPINotReady(String error){
     }
 
 }

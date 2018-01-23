@@ -6,7 +6,7 @@ package com.gd.analytics;
 
 public class GDGameData {
 
-    public static String gameMd5, title;
+    public static String gameMd5, title, bundleId;
     public static boolean enableAds, preRoll;
     public static int timeAds;
 }

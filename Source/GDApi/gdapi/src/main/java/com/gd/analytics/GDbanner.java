@@ -14,7 +14,7 @@ class GDbanner {
     protected static void init() {
 
         if(GDstatic.enable) {
-            String url = GDstatic.GAME_API_URL + '/' + GDstatic.gameId + "?domain=test.api";
+            String url = GDstatic.GAME_API_URL + '/' + GDstatic.gameId;
             GDHttpRequest.sendHttpRequest(GDlogger.mContext, url, Request.Method.GET, null, new GDHttpCallback() {
                 @Override
                 public void onSuccess(JSONObject data) {
@@ -30,19 +30,23 @@ class GDbanner {
                             GDGameData.preRoll = game.getBoolean("preRoll");
                             GDGameData.timeAds = game.getInt("timeAds");
                             GDGameData.title = game.getString("title");
+                            GDGameData.bundleId = game.getString("androidBundleId");
 
                             GDutils.log(data.toString());
-
                             GDlogger.gDad.init(GDlogger.mContext,GDlogger.isCordovaPlugin);
+                        }
+                        else{
+                            String error = "Something went wrong fetching game data.";
+                            GDutils.log(error);
 
-
+                            if(GDlogger.gDad.devListener != null)
+                                GDlogger.gDad.devListener.onAPINotReady(error);
                         }
 
                     } catch (JSONException e) {
                         e.printStackTrace();
                         GDutils.log("Something went wrong parsing json game data.\nData:\n"+data.toString());
                     }
-
                 }
 
                 @Override
@@ -75,11 +79,16 @@ class GDbanner {
 
                 if (gDshowObj.isInterstitial) {
                     if (GDstatic.reqInterstitialEnabled) {
+
                         GDlogger.gDad.showBanner(args);
                         adInterstitialTimer = null;
+
                         if(!GDstatic.testAds){
                             setAdTimer(true); // inter timer
                             GDstatic.reqInterstitialEnabled = false;
+                        }
+                        else{
+                            GDstatic.reqInterstitialEnabled = true;
                         }
 
                     } else {
@@ -91,7 +100,7 @@ class GDbanner {
                         GDlogger.gDad.showBanner(args);
                         adBannerTimer = null;
                         if(!GDstatic.testAds){
-                            setAdTimer(true); // banner timer
+                            setAdTimer(false); // banner timer
                             GDstatic.reqBannerEnabled = false;
                         }
 
@@ -100,6 +109,7 @@ class GDbanner {
                     }
                 }
             } else {
+
                 if (GDlogger.gDad.devListener != null) {
                     GDlogger.gDad.devListener.onBannerFailed("Banner request failed: 'Midroll is disabled.'");
                 }
@@ -124,7 +134,6 @@ class GDbanner {
                                     adTimerHandler(isInterstitial);
                                 }
                             } catch (InterruptedException e) {
-                                // TODO Auto-generated catch block
                                 e.printStackTrace();
                             }
                         }
@@ -141,7 +150,6 @@ class GDbanner {
                                     adTimerHandler(isInterstitial);
                                 }
                             } catch (InterruptedException e) {
-                                // TODO Auto-generated catch block
                                 e.printStackTrace();
                             }
                         }

@@ -2,6 +2,7 @@ package com.gd.analytics;
 
 class GDstatic {
 
+    protected static final String TEST_GAME_API_URL = "http://test.game.api.gamedistribution.com/game/get";
     protected static final String GAME_API_URL = "https://game.api.gamedistribution.com/game/get";
     protected static final String TUNNL_TAG_URL = "https://ana.tunnl.com"; // /at?id={{game-id}}&pageurl={{bundle-name}}
     protected static final String version = "v1.0";

@@ -16,24 +16,10 @@ import com.google.android.gms.ads.doubleclick.PublisherAdRequest;
 import com.google.android.gms.ads.doubleclick.PublisherAdView;
 import com.google.android.gms.ads.doubleclick.PublisherInterstitialAd;
 import com.google.gson.Gson;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-
-import java.security.KeyManagementException;
-import java.security.NoSuchAlgorithmException;
-import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
 import java.util.ArrayList;
-import java.util.List;
-
-import javax.net.ssl.HostnameVerifier;
-import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSession;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
 
 
 /**
@@ -51,20 +37,19 @@ public class GDad {
     private RelativeLayout relativeLayoutContainer;
     private boolean bannerActive = false;
     ArrayList<GDTunnlData> tunnlData;
-    int currentRequestInd = -1;
-    GDRequestAdHandler gdRequestAdHandler;
+    private int currentRequestInd = -1;
+    private GDRequestAdHandler gdRequestAdHandler;
 
     public void init(Activity mContext) {
         setmContext(mContext);
         setRootview((FrameLayout) mContext.findViewById(android.R.id.content));
         initBannerObject();
 
+        if (devListener != null) devListener.onAPIReady();
+
         if(GDGameData.preRoll){
             showBanner("{isInterstitial:" + true + "}");
         }
-
-        disableSSLCertificateChecking();
-
     }
 
     public void init(Activity mContext, boolean isCordovaPlugin) {
@@ -72,11 +57,11 @@ public class GDad {
             setmContext(mContext);
             // in cordova plugin, there will be no banner ads.
 
+            if (devListener != null) devListener.onAPIReady();
+
             if(GDGameData.preRoll){
                 showBanner("{isInterstitial:" + true + "}");
             }
-
-            disableSSLCertificateChecking();
 
         } else {
             init(mContext);
@@ -94,7 +79,6 @@ public class GDad {
         setRelativeLayoutContainer(rl);
 
         publisherAdView = new PublisherAdView(getmContext());
-        publisherAdView.setAdUnitId(getmUnitId());
         publisherAdView.setLayoutParams(new RelativeLayout.LayoutParams(
                 RelativeLayout.LayoutParams.WRAP_CONTENT,
                 RelativeLayout.LayoutParams.WRAP_CONTENT
@@ -113,6 +97,19 @@ public class GDad {
 
         if(getRelativeLayoutContainer() != null){
 
+            if(publisherAdView != null){
+
+                getRelativeLayoutContainer().removeView(publisherAdView);
+                publisherAdView = new PublisherAdView(getmContext());
+                publisherAdView.setLayoutParams(new RelativeLayout.LayoutParams(
+                        RelativeLayout.LayoutParams.WRAP_CONTENT,
+                        RelativeLayout.LayoutParams.WRAP_CONTENT
+                ));
+                setPublisherAdView(publisherAdView);
+                // add adcontainer into rootview
+                getRelativeLayoutContainer().addView(publisherAdView);
+            }
+
             PublisherAdRequest adRequest;
             PublisherAdRequest.Builder builder = new PublisherAdRequest.Builder();
             builder.addNetworkExtrasBundle(AdMobAdapter.class, customParams);
@@ -121,7 +118,6 @@ public class GDad {
             handleBannerParams(size, alignment, position);
 
             publisherAdView.setAdUnitId(unitId);
-
 
             publisherAdView.loadAd(adRequest);
             publisherAdView.setAdListener(new AdListener() {
@@ -152,13 +148,15 @@ public class GDad {
                             error += "No fill.\nThe ad request was successful, but no ad was returned due to lack of ad inventory.\nConstant Value: " + errorCode;
                             break;
                     }
+
                     GDutils.log("Ad failed to load: " + error);
                     GDutils.log("For more details: https://developers.google.com/android/reference/com/google/android/gms/ads/AdRequest");
 
-                    if (devListener != null)
+                    if (devListener != null && GDstatic.testAds){
                         devListener.onBannerFailed(error);
-
-                    gdRequestAdHandler.Error(error);
+                    }
+                    else if(devListener != null && gdRequestAdHandler != null)
+                        gdRequestAdHandler.Error(error);
 
                 }
 
@@ -186,7 +184,8 @@ public class GDad {
                     if (devListener != null)
                         devListener.onBannerRecieved(gdEvent);
 
-                    gdRequestAdHandler.Succes();
+                    if(!GDstatic.testAds)
+                        gdRequestAdHandler.Succes();
 
                 }
             });
@@ -199,7 +198,6 @@ public class GDad {
 
         PublisherAdRequest.Builder builder = new PublisherAdRequest.Builder();
         builder.addNetworkExtrasBundle(AdMobAdapter.class, customParams);
-
         adRequest = builder.build();
 
         mInterstitialAd.setAdUnitId(unitId);
@@ -233,11 +231,11 @@ public class GDad {
                 GDutils.log("Ad failed to load: " + error);
                 GDutils.log("For more details: https://developers.google.com/android/reference/com/google/android/gms/ads/AdRequest");
 
-                if (devListener != null)
+                if (devListener != null && GDstatic.testAds){
                     devListener.onBannerFailed(error);
-
-                gdRequestAdHandler.Error(error);
-
+                }
+                else if(devListener != null && gdRequestAdHandler != null)
+                    gdRequestAdHandler.Error(error);
 
             }
 
@@ -266,7 +264,8 @@ public class GDad {
                 if (devListener != null)
                     devListener.onBannerRecieved(gdEvent);
 
-                gdRequestAdHandler.Succes();
+                if(!GDstatic.testAds)
+                    gdRequestAdHandler.Succes();
             }
         });
         mInterstitialAd.loadAd(adRequest);
@@ -333,17 +332,22 @@ public class GDad {
         gDshowObj = gson.fromJson(args, GDshowObj.class);
 
         if(GDstatic.testAds){
-            if(gDshowObj.isInterstitial)
+            if(gDshowObj.isInterstitial){
                 this.setmUnitId(GDstatic.testInterUnitId);
-            else
+                requestInterstitial(null, GDstatic.testInterUnitId);
+            }
+            else{
                 this.setmUnitId(GDstatic.testBannerUnitId);
+                requestBanner(gDshowObj.size, gDshowObj.alignment, gDshowObj.position ,null, GDstatic.testBannerUnitId);
+            }
         }
         else{
 
-            String bundleId = "bundle.test.1";
-            String dimension = "640x480";
-            if(!gDshowObj.isInterstitial) dimension = gDshowObj.size;
-            String url = "http://pub.tunnl.com/oppm?bundleid="+bundleId+"&dnumber="+dimension;
+            currentRequestInd = -1;
+            String bundleId = GDGameData.bundleId;
+            String msize = "interstitial";
+            if(!gDshowObj.isInterstitial) msize = gDshowObj.size;
+            String url = "http://pub.tunnl.com/oppm?bundleid="+bundleId+"&msize="+msize;
 
             // getting unit id from tunnl for ad request
             GDHttpRequest.sendHttpRequest(GDlogger.mContext, url, Request.Method.GET, null, new GDHttpCallback() {
@@ -371,11 +375,16 @@ public class GDad {
                             tunnlData.add(gdTunnlData);
                         }
 
-                        requestHandler(gDshowObj);
+                        if(items.length() > 0)
+                            requestHandler(gDshowObj);
+                        else{
+                            if (devListener != null)
+                                devListener.onBannerFailed("Something went wrong fetching advertisement settings. Please contact with support team.");
+                        }
 
                     } catch (JSONException e) {
                         e.printStackTrace();
-                        GDutils.log("Something went wrong parsing json game data.\nData:\n"+data.toString());
+                        GDutils.log("Something went wrong parsing json tunnl data.\nData:\n"+data.toString());
                     }
                 }
                 @Override
@@ -440,42 +449,16 @@ public class GDad {
                 else{
                     currentRequestInd = -1;
                     tunnlData = null;
+
+                    if (devListener != null)
+                        devListener.onBannerFailed(err);
+
                 }
 
             }
         };
 
 
-    }
-
-    private static void disableSSLCertificateChecking() {
-        TrustManager[] trustAllCerts = new TrustManager[] { new X509TrustManager() {
-            public X509Certificate[] getAcceptedIssuers() {
-                return null;
-            }
-
-            @Override
-            public void checkClientTrusted(X509Certificate[] arg0, String arg1) throws CertificateException {
-                // Not implemented
-            }
-
-            @Override
-            public void checkServerTrusted(X509Certificate[] arg0, String arg1) throws CertificateException {
-                // Not implemented
-            }
-        } };
-
-        try {
-            SSLContext sc = SSLContext.getInstance("TLS");
-
-            sc.init(null, trustAllCerts, new java.security.SecureRandom());
-
-            HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
-        } catch (KeyManagementException e) {
-            e.printStackTrace();
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        }
     }
 
     public void destroyBanner() {
