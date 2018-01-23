@@ -13,7 +13,7 @@ class GDbanner {
 
     protected static void init() {
 
-        if(GDstatic.enable) {
+        if(GDstatic.enable && !GDstatic.testAds) {
             String url = GDstatic.GAME_API_URL + '/' + GDstatic.gameId;
             GDHttpRequest.sendHttpRequest(GDlogger.mContext, url, Request.Method.GET, null, new GDHttpCallback() {
                 @Override
@@ -54,6 +54,9 @@ class GDbanner {
                     GDutils.log("Something went wrong fetching json game data.");
                 }
             });
+        }
+        else if(GDstatic.testAds){
+            GDlogger.gDad.init(GDlogger.mContext,GDlogger.isCordovaPlugin);
         }
     }
 
