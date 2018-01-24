@@ -41,17 +41,27 @@ class GDbanner {
 
                             if(GDlogger.gDad.devListener != null)
                                 GDlogger.gDad.devListener.onAPINotReady(error);
+                            GDstatic.enable = false;
+
                         }
 
                     } catch (JSONException e) {
                         e.printStackTrace();
-                        GDutils.log("Something went wrong parsing json game data.\nData:\n"+data.toString());
+                        GDutils.log("Something went wrong parsing json game data.");
+                        if(GDlogger.gDad.devListener != null)
+                            GDlogger.gDad.devListener.onAPINotReady("Something went wrong parsing json game data.");
+                        GDstatic.enable = false;
+
                     }
                 }
 
                 @Override
                 public void onError(VolleyError error) {
                     GDutils.log("Something went wrong fetching json game data.");
+                    if(GDlogger.gDad.devListener != null)
+                        GDlogger.gDad.devListener.onAPINotReady("Something went wrong fetching json game data.");
+                    GDstatic.enable = false;
+
                 }
             });
         }
