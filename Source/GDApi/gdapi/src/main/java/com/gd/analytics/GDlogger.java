@@ -6,7 +6,8 @@ import android.util.Log;
 public class GDlogger {
 
     static Activity mContext;
-    static GDad gDad;
+    static GDad gDad = new GDad();
+
     static boolean isCordovaPlugin = false;
 
     /**
@@ -23,7 +24,6 @@ public class GDlogger {
             GDutils.log("API is already Initialized.");
         } else {
             mContext = _mContext;
-            gDad = new GDad();
 
             String[] gameserver = regId.toLowerCase().split("-");
             GDstatic.serverId = gameserver[5];
