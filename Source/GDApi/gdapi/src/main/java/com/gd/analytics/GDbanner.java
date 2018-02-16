@@ -14,7 +14,7 @@ class GDbanner {
     protected static void init() {
 
         if(GDstatic.enable && !GDstatic.testAds) {
-            String url = GDstatic.GAME_API_URL + '/' + GDstatic.gameId;
+            String url = GDstatic.GAME_API_URL+ '/' + GDstatic.gameId;
             GDHttpRequest.sendHttpRequest(GDlogger.mContext, url, Request.Method.GET, null, new GDHttpCallback() {
                 @Override
                 public void onSuccess(JSONObject data) {
@@ -106,6 +106,9 @@ class GDbanner {
 
                     } else {
                         GDutils.log("You can not invoke 'ShowBanner()' within " + GDGameData.timeAds + " min(s).");
+                        if (GDlogger.gDad.devListener != null) {
+                            GDlogger.gDad.devListener.onBannerFailed("You can not invoke 'ShowBanner()' within " + GDGameData.timeAds + " min(s).");
+                        }
                     }
                 }
                 else {
@@ -119,6 +122,9 @@ class GDbanner {
 
                     } else {
                         GDutils.log("You can not invoke 'ShowBanner()' within " + GDGameData.timeAds + " min(s).");
+                        if (GDlogger.gDad.devListener != null) {
+                            GDlogger.gDad.devListener.onBannerFailed("You can not invoke 'ShowBanner()' within " + GDGameData.timeAds + " min(s).");
+                        }
                     }
                 }
             } else {

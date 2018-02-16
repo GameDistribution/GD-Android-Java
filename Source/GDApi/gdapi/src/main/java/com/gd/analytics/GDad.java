@@ -46,9 +46,6 @@ public class GDad {
 
         if (devListener != null) devListener.onAPIReady();
 
-        if(GDGameData.preRoll){
-            showBanner("{isInterstitial:" + true + "}");
-        }
     }
 
     public void init(Activity mContext, boolean isCordovaPlugin) {
@@ -58,9 +55,6 @@ public class GDad {
 
             if (devListener != null) devListener.onAPIReady();
 
-            if(GDGameData.preRoll){
-                showBanner("{isInterstitial:" + true + "}");
-            }
 
         } else {
             init(mContext);
@@ -346,7 +340,7 @@ public class GDad {
             String bundleId = GDGameData.bundleId;
             String msize = "interstitial";
             if(!gDshowObj.isInterstitial) msize = gDshowObj.size;
-            String url = "http://pub.tunnl.com/oppm?bundleid="+bundleId+"&msize="+msize;
+            String url = "http://pub.tunnl.com/oppm?bundleid=and."+bundleId+"&msize="+msize;
 
             // getting unit id from tunnl for ad request
             GDHttpRequest.sendHttpRequest(GDlogger.mContext, url, Request.Method.GET, null, new GDHttpCallback() {
@@ -408,22 +402,22 @@ public class GDad {
         gdRequestAdHandler = new GDRequestAdHandler() {
             @Override
             public void Succes() {
-                GDHttpRequest.sendStringRequest(GDlogger.mContext, tunnlData.get(currentRequestInd).getImp(), Request.Method.GET, null, new GDHttpCallback() {
+                GDHttpRequest.sendStringRequest(GDlogger.mContext, tunnlData.get(currentRequestInd).getImp().replace("https", "http"), Request.Method.GET, null, new GDHttpCallback() {
                     @Override
                     public void onSuccess(JSONObject data) {
+                        GDutils.log("Imp");
                     }
 
                     @Override
                     public void onError(VolleyError error) {
+                        GDutils.log("Imp error");
                     }
                 });
             }
 
             @Override
             public void Error(String err) {
-
-                //ToDO add use error listener here for user.
-
+                
                 String url = tunnlData.get(currentRequestInd).getErr().replace("https","http");
                 GDHttpRequest.sendStringRequest(GDlogger.mContext, url, Request.Method.GET, null, new GDHttpCallback() {
                     @Override

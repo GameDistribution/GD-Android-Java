@@ -1,6 +1,9 @@
 package com.gd.analytics;
 
 import android.app.Activity;
+import android.content.Context;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.util.Log;
 
 public class GDlogger {
@@ -20,21 +23,34 @@ public class GDlogger {
     public static void init(String gameId, String regId, Activity _mContext) {
 
         mContext = _mContext;
-        if (GDstatic.enable) {
-            GDutils.log("API is already Initialized.");
-        } else {
-            mContext = _mContext;
 
-            String[] gameserver = regId.toLowerCase().split("-");
-            GDstatic.serverId = gameserver[5];
-            GDstatic.regId = gameserver[0] + "-" + gameserver[1] + "-" + gameserver[2] + "-" + gameserver[3] + "-" + gameserver[4];
-            GDstatic.gameId = gameId;
+        if(GDutils.isOnline(mContext)){
 
-            GDstatic.enable = true;
+            if (GDstatic.enable) {
+                GDutils.log("API is already Initialized.");
+            } else {
+                mContext = _mContext;
 
-            GDbanner.init();
-            GDutils.log("Game Distribution Android API Init");
+                String[] gameserver = regId.toLowerCase().split("-");
+                GDstatic.serverId = gameserver[5];
+                GDstatic.regId = gameserver[0] + "-" + gameserver[1] + "-" + gameserver[2] + "-" + gameserver[3] + "-" + gameserver[4];
+                GDstatic.gameId = gameId;
+
+                GDstatic.enable = true;
+
+                GDbanner.init();
+                GDutils.log("Game Distribution Android API Init");
+            }
+
         }
+        else{
+
+            if(GDlogger.gDad.devListener != null)
+                GDlogger.gDad.devListener.onAPINotReady("API cannot connect to internet. Please check the network connection.");
+
+        }
+
+
     }
 
     public static void init(String gameId, String regId, Activity _mContext, boolean isCordovaPlugin) {
@@ -65,23 +81,38 @@ public class GDlogger {
      */
     public static void ShowBanner(String size, String alignment, String position) {
 
-        String args = "{isInterstitial:false,size:" + size + ",alignment:" + alignment + ",position:" + position + "}";
+        if(GDutils.isOnline(mContext)){
+            String args = "{isInterstitial:false,size:" + size + ",alignment:" + alignment + ",position:" + position + "}";
 
-        if (GDstatic.enable) {
-            GDbanner.ShowBanner(args);
-        } else {
-            Log.i("GDLogger", "GDApi is not initialized!");
+            if (GDstatic.enable) {
+                GDbanner.ShowBanner(args);
+            } else {
+                Log.i("GDLogger", "GDApi is not initialized!");
+            }
         }
+        else{
+            if(GDlogger.gDad.devListener != null)
+                GDlogger.gDad.devListener.onBannerFailed("API cannot connect to internet. Please check the network connection.");
+        }
+
+
     }
 
     public static void ShowBanner(Boolean isInterstitial) {
 
-        String args = "{isInterstitial:" + isInterstitial + "}";
-        if (GDstatic.enable) {
-            GDbanner.ShowBanner(args);
-        } else {
-            Log.i("GDLogger", "GDApi is not initialized!");
+        if(GDutils.isOnline(mContext)){
+            String args = "{isInterstitial:" + isInterstitial + "}";
+            if (GDstatic.enable) {
+                GDbanner.ShowBanner(args);
+            } else {
+                Log.i("GDLogger", "GDApi is not initialized!");
+            }
         }
+        else{
+            if(GDlogger.gDad.devListener != null)
+                GDlogger.gDad.devListener.onBannerFailed("API cannot connect to internet. Please check the network connection.");
+        }
+
     }
 
     public static void setAdListener(GDadListener gDadListener) {
@@ -97,5 +128,6 @@ public class GDlogger {
             //	GDbanner.hide();
         }
     }
+
 
 }
