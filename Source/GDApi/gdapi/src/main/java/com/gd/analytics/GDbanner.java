@@ -1,261 +1,191 @@
 package com.gd.analytics;
 
-import android.util.Log;
-
+import com.android.volley.Request;
+import com.android.volley.VolleyError;
 import com.google.gson.Gson;
 
-import org.apache.http.Header;
-import org.xmlpull.v1.XmlPullParser;
-import org.xmlpull.v1.XmlPullParserException;
-import org.xmlpull.v1.XmlPullParserFactory;
-
-import java.io.IOException;
-import java.io.StringReader;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 class GDbanner {
 
-	private static XmlPullParserFactory xmlFactoryObject;
-	private static XmlPullParser myparser;
-	private static Thread adBannerTimer,adInterstitialTimer;
-	protected static GDbannerData bannerData = new GDbannerData();
+    private static Thread adBannerTimer, adInterstitialTimer;
 
-	protected static void init() {
+    protected static void init() {
 
-		if (GDstatic.enable) {
-		  	try {
-				xmlFactoryObject = XmlPullParserFactory.newInstance();
-				myparser = xmlFactoryObject.newPullParser();
-				myparser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, false);
-			} catch (XmlPullParserException e2) {
-				// TODO Auto-generated catch block
-				e2.printStackTrace();
-			}
+        if(GDstatic.enable && !GDstatic.testAds) {
+            String url = GDstatic.GAME_API_URL+ '/' + GDstatic.gameId;
+            GDHttpRequest.sendHttpRequest(GDlogger.mContext, url, Request.Method.GET, null, new GDHttpCallback() {
+                @Override
+                public void onSuccess(JSONObject data) {
 
-			if (!GDutils.isApplicationBroughtToBackground()) {
-				loadBanner(new GDhttpAyncResponseHandler() {
+                    try {
+                        boolean success = data.getBoolean("success");
+                        if(success) {
+                            JSONObject result = data.getJSONObject("result");
+                            JSONObject game = result.getJSONObject("game");
 
-							@Override
-							public void onFailure(int statusCode, Header[] header,
-												  String content, Throwable error) {
+                            GDGameData.enableAds = game.getBoolean("enableAds");
+                            GDGameData.gameMd5 = game.getString("gameMd5");
+                            GDGameData.preRoll = game.getBoolean("preRoll");
+                            GDGameData.timeAds = game.getInt("timeAds");
+                            GDGameData.title = game.getString("title");
+                            GDGameData.bundleId = game.getString("androidBundleId");
 
-								GDutils.log("Banner onFailure: " + statusCode + " "	+ error.getMessage());
-							}
+                            GDutils.log(data.toString());
+                            GDlogger.gDad.init(GDlogger.mContext,GDlogger.isCordovaPlugin);
+                        }
+                        else{
+                            String error = "Something went wrong fetching game data.";
+                            GDutils.log(error);
 
-							@Override
-							public void onSuccess(int statusCode, Header[] header,
-									String content) {
-								try {
-									switch (statusCode) {
-									case 200:
-										if (content.length()>0) {
-											parseXML(content);
+                            if(GDlogger.gDad.devListener != null)
+                                GDlogger.gDad.devListener.onAPINotReady(error);
+                            GDstatic.enable = false;
 
-											ShowBanner("{_key:'preroll',isInterstitial:true}");
+                        }
 
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                        GDutils.log("Something went wrong parsing json game data.");
+                        if(GDlogger.gDad.devListener != null)
+                            GDlogger.gDad.devListener.onAPINotReady("Something went wrong parsing json game data.");
+                        GDstatic.enable = false;
 
-										}
-										break;
-									case 401:
-										break;
-									case 403:
-										break;
-									default:
-										break;
-									}
-//									GDutils.log("Banner onSuccess: " + statusCode + " "	+ content);
+                    }
+                }
 
-								} catch (Exception e) {
-									e.printStackTrace();
-								}
+                @Override
+                public void onError(VolleyError error) {
+                    GDutils.log("Something went wrong fetching json game data.");
+                    if(GDlogger.gDad.devListener != null)
+                        GDlogger.gDad.devListener.onAPINotReady("Something went wrong fetching json game data.");
+                    GDstatic.enable = false;
 
-							}
+                }
+            });
+        }
+        else if(GDstatic.testAds){
+            GDlogger.gDad.init(GDlogger.mContext,GDlogger.isCordovaPlugin);
+        }
+    }
 
-						});
-			}
-		}
-	}
+    protected static void ShowBanner(String args) {
 
-	protected static void ShowBanner(String args){
-
-		GDutils.compareVersions(bannerData.apiVersion);
-
-		Gson gson = new Gson();
-		final GDshowObj gDshowObj;
-		gDshowObj = gson.fromJson(args, GDshowObj.class);
+        Gson gson = new Gson();
+        final GDshowObj gDshowObj;
+        gDshowObj = gson.fromJson(args, GDshowObj.class);
 
 
-		if(bannerData.enable && gDshowObj._key != null && gDshowObj._key.equals("preroll") && GDlogger.gDad !=null){
+        if ((GDGameData.enableAds || GDstatic.testAds) && gDshowObj._key != null && gDshowObj._key.equals("preroll") && GDlogger.gDad != null) {
 
-			if(bannerData.pre){
-				GDlogger.gDad.setmUnitId(GDstatic.adUnit);
-				GDlogger.gDad.showBanner(args);
-			}
-			else{
-				if(GDlogger.gDad.devListener!= null){
-					GDlogger.gDad.devListener.onBannerFailed("Banner request failed: 'Preroll is disabled.'");
-				}
-			}
-		}
-		else{ // so this is for midroll request
+            if (GDGameData.preRoll) {
+                GDlogger.gDad.showBanner(args);
+            } else {
+                if (GDlogger.gDad.devListener != null) {
+                    GDlogger.gDad.devListener.onBannerFailed("Banner request failed: 'Preroll is disabled.'");
+                }
+            }
+        } else { // so this is for midroll request
 
-			if(bannerData.enable && bannerData.showAfterTimeout!=0 && GDlogger.gDad != null){
+            if ((GDstatic.testAds || (GDGameData.enableAds && GDGameData.timeAds != 0)) && GDlogger.gDad != null) {
 
-				if(gDshowObj.isInterstitial){
-					if(GDstatic.reqInterstitialEnabled){
-						GDlogger.gDad.setmUnitId(GDstatic.adUnit);
-						GDlogger.gDad.showBanner(args);
-						adInterstitialTimer = null;
-						setAdTimer(true); // inter timer
-						GDstatic.reqInterstitialEnabled = false;
-					}
-					else{
-						GDutils.log("You can not invoke 'ShowBanner()' within "+ bannerData.showAfterTimeout/60000 +" min(s).");
-					}
-				}
+                if (gDshowObj.isInterstitial) {
+                    if (GDstatic.reqInterstitialEnabled) {
 
-				else{
-					if(GDstatic.reqBannerEnabled){
-						GDlogger.gDad.setmUnitId(GDstatic.adUnit);
-						GDlogger.gDad.showBanner(args);
-						adBannerTimer = null;
-						setAdTimer(false); // banner timer
-						GDstatic.reqBannerEnabled = false;
-					}
-					else {
-						GDutils.log("You can not invoke 'ShowBanner()' within "+ bannerData.showAfterTimeout/60000 +" min(s).");
-					}
-				}
-			}
-			else{
-				if(GDlogger.gDad.devListener!= null){
-					GDlogger.gDad.devListener.onBannerFailed("Banner request failed: 'Midroll is disabled.'");
-				}
-			}
+                        GDlogger.gDad.showBanner(args);
+                        adInterstitialTimer = null;
 
-		}
+                        if(!GDstatic.testAds){
+                            setAdTimer(true); // inter timer
+                            GDstatic.reqInterstitialEnabled = false;
+                        }
+                        else{
+                            GDstatic.reqInterstitialEnabled = true;
+                        }
 
+                    } else {
+                        GDutils.log("You can not invoke 'ShowBanner()' within " + GDGameData.timeAds + " min(s).");
+                        if (GDlogger.gDad.devListener != null) {
+                            GDlogger.gDad.devListener.onBannerFailed("You can not invoke 'ShowBanner()' within " + GDGameData.timeAds + " min(s).");
+                        }
+                    }
+                }
+                else {
+                    if (GDstatic.reqBannerEnabled) {
+                        GDlogger.gDad.showBanner(args);
+                        adBannerTimer = null;
+                        if(!GDstatic.testAds){
+                            setAdTimer(false); // banner timer
+                            GDstatic.reqBannerEnabled = false;
+                        }
 
-	}
+                    } else {
+                        GDutils.log("You can not invoke 'ShowBanner()' within " + GDGameData.timeAds + " min(s).");
+                        if (GDlogger.gDad.devListener != null) {
+                            GDlogger.gDad.devListener.onBannerFailed("You can not invoke 'ShowBanner()' within " + GDGameData.timeAds + " min(s).");
+                        }
+                    }
+                }
+            } else {
 
-	private static void parseXML(String xml) throws XmlPullParserException, IOException {
+                if (GDlogger.gDad.devListener != null) {
+                    GDlogger.gDad.devListener.onBannerFailed("Banner request failed: 'Midroll is disabled.'");
+                }
+            }
 
-		myparser.setInput(new StringReader(xml));
-		myparser.nextTag();
-		myparser.require(XmlPullParser.START_TAG, null, "rs");
-
-		GDutils.log(xml);
-	    while (myparser.next() != XmlPullParser.END_DOCUMENT) {
-			if (myparser.getEventType() != XmlPullParser.START_TAG) {
-			    continue;
-			}
-
-			String name=myparser.getName();
-			String value=readText(myparser);
-
-			// Banner timeout
-			if(name.equals("tim")){
-			   bannerData.timeOut = Integer.parseInt((value!=""?value:"10")+"000");
-			}
-			// Banner Enable?
-			else if(name.equals("act")){
-				bannerData.enable = ((value!=""?value:"0").equals("1"));
-			}
-			else if(name.equals("pre")){
-				bannerData.pre = ((value!=""?value:"0").equals("1"));
-			}
-			else if(name.equals("andadt")){
-				bannerData.adType = Integer.parseInt(value!=""?value:"0");
-			}
-			else if(name.equals("sat")){
-				bannerData.showAfterTimeout = Integer.parseInt((value!=""?value:"0")+"000")*60;
-				if(bannerData.showAfterTimeout == 0){
-					GDstatic.reqBannerEnabled = false;
-				}
-			}
-			else if(name.equals("andver")){
-				bannerData.apiVersion = Float.parseFloat(value !=""?value:"1.0");
-			}
-			else if(name.equals("aid")){
-				bannerData.affiliateId = value !=""?value:"";
-				GDstatic.affiliateId = bannerData.affiliateId;
-			}
-			else if(name.equals("andadu")){
-				bannerData.adUnit = value !=""?value:"";
-				GDstatic.adUnit = bannerData.adUnit;
-			}
-	   }
-		GDutils.compareVersions(bannerData.apiVersion);
-	}
-	
-	private static String readText(XmlPullParser parser) throws IOException, XmlPullParserException {
-	    String result = "";
-	    if (parser.next() == XmlPullParser.TEXT) {
-	        result = parser.getText();
-	        parser.nextTag();
-	    }
-	    return result;
-	}	
-	
-	private static void loadBanner(GDhttpAyncResponseHandler responseHandler) {
-		GDhttpClient _http = new GDhttpClient();
-		GDtaskParams _params = new GDtaskParams();
-
-		_params.url = "http://" + GDstatic.serverId + ".bn.submityourgame.com/"	+ GDstatic.gameId + ".xml" +"?ver=800&url=http://www.gamedistribution.com";
-		_params.method = GDtaskParams.METHODS.GET;
-		_params.params = null;
-		_http.execute(_params, responseHandler);
-	}
-
-	private static void setAdTimer (final boolean isInterstitial){
-
-		if (GDstatic.enable) {
-
-			if(isInterstitial){
-				adInterstitialTimer = new Thread(new Runnable() {
-					public void run() {
-						while (true) {
-							try {
-								Thread.sleep(bannerData.showAfterTimeout);
-								if (!GDutils.isApplicationBroughtToBackground()) {
-									adTimerHandler(isInterstitial);
-								}
-							} catch (InterruptedException e) {
-								// TODO Auto-generated catch block
-								e.printStackTrace();
-							}
-						}
-					}
-				});
-				adInterstitialTimer.start();
-			}
-			else {
-				adBannerTimer = new Thread(new Runnable() {
-					public void run() {
-						while (true) {
-							try {
-								Thread.sleep(bannerData.showAfterTimeout);
-								if (!GDutils.isApplicationBroughtToBackground()) {
-									adTimerHandler(isInterstitial);
-								}
-							} catch (InterruptedException e) {
-								// TODO Auto-generated catch block
-								e.printStackTrace();
-							}
-						}
-					}
-				});
-				adBannerTimer.start();
-			}
+        }
 
 
-		}
-	}
-	private static void adTimerHandler(boolean isInterstitial){
-		if(isInterstitial){
-			GDstatic.reqInterstitialEnabled = true;
-		}
-		else{
-			GDstatic.reqBannerEnabled = true;
-		}
-	}
+    }
+
+    private static void setAdTimer(final boolean isInterstitial) {
+
+        if (GDstatic.enable) {
+
+            if (isInterstitial) {
+                adInterstitialTimer = new Thread(new Runnable() {
+                    public void run() {
+                        while (true) {
+                            try {
+                                Thread.sleep(GDGameData.timeAds * 60000);
+                                if (!GDutils.isApplicationBroughtToBackground()) {
+                                    adTimerHandler(isInterstitial);
+                                }
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    }
+                });
+                adInterstitialTimer.start();
+            } else {
+                adBannerTimer = new Thread(new Runnable() {
+                    public void run() {
+                        while (true) {
+                            try {
+                                Thread.sleep(GDGameData.timeAds * 60000);
+                                if (!GDutils.isApplicationBroughtToBackground()) {
+                                    adTimerHandler(isInterstitial);
+                                }
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    }
+                });
+                adBannerTimer.start();
+            }
+
+
+        }
+    }
+
+    private static void adTimerHandler(boolean isInterstitial) {
+        if (isInterstitial) {
+            GDstatic.reqInterstitialEnabled = true;
+        } else {
+            GDstatic.reqBannerEnabled = true;
+        }
+    }
 }

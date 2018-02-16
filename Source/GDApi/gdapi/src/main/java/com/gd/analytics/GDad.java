@@ -2,12 +2,12 @@ package com.gd.analytics;
 
 import android.app.Activity;
 import android.os.Bundle;
-import android.provider.Settings;
 import android.view.Gravity;
-import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.RelativeLayout;
 
+import com.android.volley.Request;
+import com.android.volley.VolleyError;
 import com.google.ads.mediation.admob.AdMobAdapter;
 import com.google.android.gms.ads.AdListener;
 import com.google.android.gms.ads.AdSize;
@@ -15,50 +15,53 @@ import com.google.android.gms.ads.doubleclick.PublisherAdRequest;
 import com.google.android.gms.ads.doubleclick.PublisherAdView;
 import com.google.android.gms.ads.doubleclick.PublisherInterstitialAd;
 import com.google.gson.Gson;
-
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+import java.util.ArrayList;
 
 
 /**
  * Created by Emre Demir on 20.09.2016.
  */
 
-public class GDad{
+public class GDad {
 
+    GDadListener devListener;
     private PublisherInterstitialAd mInterstitialAd;
     private Activity mContext;
     private String mUnitId;
-    private String cordovaAdxUnitId = "ca-mb-app-pub-5192618204358860/8119020012";
     private PublisherAdView publisherAdView;
     private FrameLayout rootview;
     private RelativeLayout relativeLayoutContainer;
-    private int gdpLevel = 0;
     private boolean bannerActive = false;
-    private String deviceID = null;
-    private boolean isCordovaPlugin = false;
+    ArrayList<GDTunnlData> tunnlData;
+    private int currentRequestInd = -1;
+    private GDRequestAdHandler gdRequestAdHandler;
 
-    GDadListener devListener;
-    GDshowObj arguments;
-    GDgdp gDgdp = new GDgdp();
-
-    public void init(Activity mContext){
+    public void init(Activity mContext) {
         setmContext(mContext);
         setRootview((FrameLayout) mContext.findViewById(android.R.id.content));
         initBannerObject();
+
+        if (devListener != null) devListener.onAPIReady();
+
     }
 
-    public void init(Activity mContext,boolean isCordovaPlugin){
-        if(isCordovaPlugin){
-            this.isCordovaPlugin = true;
+    public void init(Activity mContext, boolean isCordovaPlugin) {
+        if (isCordovaPlugin) {
             setmContext(mContext);
             // in cordova plugin, there will be no banner ads.
-        }
-        else {
+
+            if (devListener != null) devListener.onAPIReady();
+
+
+        } else {
             init(mContext);
         }
     }
-    private void initBannerObject(){
+
+    private void initBannerObject() {
         /* Ad request object for banners*/
         RelativeLayout rl = new RelativeLayout(getmContext());
         rl.setLayoutParams(new RelativeLayout.LayoutParams(
@@ -69,7 +72,6 @@ public class GDad{
         setRelativeLayoutContainer(rl);
 
         publisherAdView = new PublisherAdView(getmContext());
-        publisherAdView.setAdUnitId(getmUnitId());
         publisherAdView.setLayoutParams(new RelativeLayout.LayoutParams(
                 RelativeLayout.LayoutParams.WRAP_CONTENT,
                 RelativeLayout.LayoutParams.WRAP_CONTENT
@@ -83,152 +85,150 @@ public class GDad{
         getRootview().addView(relativeLayoutContainer);
 
     }
-    private void requestBanner(final int gdpLevel,String size,String alignment,String position){
-        Bundle cust_params = new Bundle();
-        cust_params.putString("apptype","android");
-        cust_params.putString("appid",GDstatic.gameId);
-        cust_params.putInt("gdp",gdpLevel);
-        cust_params.putString("a",GDstatic.affiliateId);
 
-        PublisherAdRequest adRequest;
-        PublisherAdRequest.Builder builder = new PublisherAdRequest.Builder();
-        builder.addNetworkExtrasBundle(AdMobAdapter.class,cust_params);
+    private void requestBanner(String size, String alignment, String position, Bundle customParams, String unitId) {
 
-        if(this.deviceID != null){
-            builder.addTestDevice(this.deviceID);
-        }
-        adRequest = builder.build();
-        handleBannerParams(size,alignment,position);
+        if(getRelativeLayoutContainer() != null){
 
-        publisherAdView.setAdUnitId(getmUnitId());
+            if(publisherAdView != null){
 
-
-
-        publisherAdView.loadAd(adRequest);
-        publisherAdView.setAdListener(new AdListener() {
-
-            @Override
-            public void onAdClosed() {
-                super.onAdClosed();
-                GDutils.log("Ad closed.");
-                if(devListener != null)
-                    devListener.onBannerClosed();
+                getRelativeLayoutContainer().removeView(publisherAdView);
+                publisherAdView = new PublisherAdView(getmContext());
+                publisherAdView.setLayoutParams(new RelativeLayout.LayoutParams(
+                        RelativeLayout.LayoutParams.WRAP_CONTENT,
+                        RelativeLayout.LayoutParams.WRAP_CONTENT
+                ));
+                setPublisherAdView(publisherAdView);
+                // add adcontainer into rootview
+                getRelativeLayoutContainer().addView(publisherAdView);
             }
 
-            @Override
-            public void onAdFailedToLoad(int errorCode) {
-                super.onAdFailedToLoad(errorCode);
-                String error="";
-                switch (errorCode){
-                    case  0:
-                        error += "Internal Error.\nSomething happened internally; for instance, an invalid response was received from the ad server.\nConstant Value: "+errorCode;
-                        break;
-                    case  1:
-                        error += "Invalid request.\nThe ad request was invalid; for instance, the ad unit ID was incorrect.\nConstant Value: "+errorCode;
-                        break;
-                    case 2:
-                        error += "Network error.\nThe ad request was unsuccessful due to network connectivity.\nConstant Value: "+errorCode;
-                        break;
-                    case 3:
-                        error += "No fill.\nThe ad request was successful, but no ad was returned due to lack of ad inventory.\nConstant Value: "+errorCode;
-                        break;
+            PublisherAdRequest adRequest;
+            PublisherAdRequest.Builder builder = new PublisherAdRequest.Builder();
+            builder.addNetworkExtrasBundle(AdMobAdapter.class, customParams);
+
+            adRequest = builder.build();
+            handleBannerParams(size, alignment, position);
+
+            publisherAdView.setAdUnitId(unitId);
+
+            publisherAdView.loadAd(adRequest);
+            publisherAdView.setAdListener(new AdListener() {
+
+                @Override
+                public void onAdClosed() {
+                    super.onAdClosed();
+                    GDutils.log("Ad closed.");
+                    if (devListener != null)
+                        devListener.onBannerClosed();
                 }
-                GDutils.log("Ad failed to load: "+error);
-                GDutils.log("For more details: https://developers.google.com/android/reference/com/google/android/gms/ads/AdRequest");
 
-                if(devListener != null)
-                    devListener.onBannerFailed(error);
+                @Override
+                public void onAdFailedToLoad(int errorCode) {
+                    super.onAdFailedToLoad(errorCode);
+                    String error = "";
+                    switch (errorCode) {
+                        case 0:
+                            error += "Internal Error.\nSomething happened internally; for instance, an invalid response was received from the ad server.\nConstant Value: " + errorCode;
+                            break;
+                        case 1:
+                            error += "Invalid request.\nThe ad request was invalid; for instance, the ad unit ID was incorrect.\nConstant Value: " + errorCode;
+                            break;
+                        case 2:
+                            error += "Network error.\nThe ad request was unsuccessful due to network connectivity.\nConstant Value: " + errorCode;
+                            break;
+                        case 3:
+                            error += "No fill.\nThe ad request was successful, but no ad was returned due to lack of ad inventory.\nConstant Value: " + errorCode;
+                            break;
+                    }
 
-                gDgdp.error(errorCode,gdpLevel);
-            }
+                    GDutils.log("Ad failed to load: " + error);
+                    GDutils.log("For more details: https://developers.google.com/android/reference/com/google/android/gms/ads/AdRequest");
 
-            @Override
-            public void onAdLeftApplication() {
-                super.onAdLeftApplication();
-            }
+                    if (devListener != null && GDstatic.testAds){
+                        devListener.onBannerFailed(error);
+                    }
+                    else if(devListener != null && gdRequestAdHandler != null)
+                        gdRequestAdHandler.Error(error);
 
-            @Override
-            public void onAdOpened() {
-                super.onAdOpened();
-                if(devListener != null)
-                    devListener.onBannerStarted();
-            }
+                }
 
-            @Override
-            public void onAdLoaded() {
-                super.onAdLoaded();
-                GDutils.log("Ad received.");
-                bannerActive = true;
+                @Override
+                public void onAdLeftApplication() {
+                    super.onAdLeftApplication();
+                }
 
-                GDEvent gdEvent = new GDEvent();
-                gdEvent.isInterstitial = false;
-                gdEvent.dimensions = publisherAdView.getAdSize();
-                if(devListener != null)
-                    devListener.onBannerRecieved(gdEvent);
+                @Override
+                public void onAdOpened() {
+                    super.onAdOpened();
+                    if (devListener != null)
+                        devListener.onBannerStarted();
+                }
 
-                gDgdp.success(gdpLevel);
-            }
-        });
+                @Override
+                public void onAdLoaded() {
+                    super.onAdLoaded();
+                    GDutils.log("Ad received.");
+                    bannerActive = true;
+
+                    GDEvent gdEvent = new GDEvent();
+                    gdEvent.isInterstitial = false;
+                    gdEvent.dimensions = publisherAdView.getAdSize();
+                    if (devListener != null)
+                        devListener.onBannerRecieved(gdEvent);
+
+                    if(!GDstatic.testAds)
+                        gdRequestAdHandler.Succes();
+
+                }
+            });
+        }
     }
-    private void requestInterstitial(final int gdpLevel){
 
-        Bundle cust_params = new Bundle();
-        cust_params.putString("apptype","android");
-        cust_params.putInt("gdp",gdpLevel);
-        cust_params.putString("appid",GDstatic.gameId);
-        cust_params.putString("a",GDstatic.affiliateId);
-
+    private void requestInterstitial(Bundle customParams, String unitId) {
         PublisherAdRequest adRequest;
         mInterstitialAd = new PublisherInterstitialAd(mContext);
 
         PublisherAdRequest.Builder builder = new PublisherAdRequest.Builder();
-        builder.addNetworkExtrasBundle(AdMobAdapter.class,cust_params);
-
-        if(this.deviceID != null){
-            builder.addTestDevice(this.deviceID);
-        }
+        builder.addNetworkExtrasBundle(AdMobAdapter.class, customParams);
         adRequest = builder.build();
 
-        if(this.isCordovaPlugin){
-            mInterstitialAd.setAdUnitId(cordovaAdxUnitId);
-        }
-        else{
-            mInterstitialAd.setAdUnitId(getmUnitId());
-        }
-        mInterstitialAd.setAdListener(new AdListener() {
+        mInterstitialAd.setAdUnitId(unitId);
+        mInterstitialAd.setAdListener(  new AdListener() {
             @Override
             public void onAdClosed() {
                 super.onAdClosed();
                 GDutils.log("Ad closed.");
-                if(devListener != null)
+                if (devListener != null)
                     devListener.onBannerClosed();
             }
 
             @Override
             public void onAdFailedToLoad(int errorCode) {
                 super.onAdFailedToLoad(errorCode);
-                String error="";
-                switch (errorCode){
-                    case  0:
-                        error += "Internal Error.\nSomething happened internally; for instance, an invalid response was received from the ad server.\nConstant Value: "+errorCode;
+                String error = "";
+                switch (errorCode) {
+                    case 0:
+                        error += "Internal Error.\nSomething happened internally; for instance, an invalid response was received from the ad server.\nConstant Value: " + errorCode;
                         break;
-                    case  1:
-                        error += "Invalid request.\nThe ad request was invalid; for instance, the ad unit ID was incorrect.\nConstant Value: "+errorCode;
+                    case 1:
+                        error += "Invalid request.\nThe ad request was invalid; for instance, the ad unit ID was incorrect.\nConstant Value: " + errorCode;
                         break;
                     case 2:
-                        error += "Network error.\nThe ad request was unsuccessful due to network connectivity.\nConstant Value: "+errorCode;
+                        error += "Network error.\nThe ad request was unsuccessful due to network connectivity.\nConstant Value: " + errorCode;
                         break;
                     case 3:
-                        error += "No fill.\nThe ad request was successful, but no ad was returned due to lack of ad inventory.\nConstant Value: "+errorCode;
+                        error += "No fill.\nThe ad request was successful, but no ad was returned due to lack of ad inventory.\nConstant Value: " + errorCode;
                         break;
                 }
-                GDutils.log("Ad failed to load: "+error);
+                GDutils.log("Ad failed to load: " + error);
                 GDutils.log("For more details: https://developers.google.com/android/reference/com/google/android/gms/ads/AdRequest");
 
-                if(devListener != null)
+                if (devListener != null && GDstatic.testAds){
                     devListener.onBannerFailed(error);
-
-                gDgdp.error(errorCode,gdpLevel);
+                }
+                else if(devListener != null && gdRequestAdHandler != null)
+                    gdRequestAdHandler.Error(error);
 
             }
 
@@ -240,7 +240,7 @@ public class GDad{
             @Override
             public void onAdOpened() {
                 super.onAdOpened();
-                if(devListener != null)
+                if (devListener != null)
                     devListener.onBannerStarted();
             }
 
@@ -254,28 +254,31 @@ public class GDad{
                 gdEvent.isInterstitial = true;
                 gdEvent.dimensions = "Out-of-page";
 
-                if(devListener != null)
+                if (devListener != null)
                     devListener.onBannerRecieved(gdEvent);
+
+                if(!GDstatic.testAds)
+                    gdRequestAdHandler.Succes();
             }
         });
         mInterstitialAd.loadAd(adRequest);
     }
 
-    private void handleBannerParams(String size, String alignment, String position){
+    private void handleBannerParams(String size, String alignment, String position) {
 
-        if (size.equals("AdSize.BANNER")) {
+        if (size.equals("320x50")) {
             publisherAdView.setAdSizes(AdSize.BANNER);
 
-        } else if (size.equals("AdSize.LARGE_BANNER")) {
+        } else if (size.equals("320x100")) {
             publisherAdView.setAdSizes(AdSize.LARGE_BANNER);
 
-        } else if (size.equals("AdSize.MEDIUM_RECTANGLE")) {
+        } else if (size.equals("300x250")) {
             publisherAdView.setAdSizes(AdSize.MEDIUM_RECTANGLE);
 
-        } else if (size.equals("AdSize.FULL_BANNER")) {
+        } else if (size.equals("468x60")) {
             publisherAdView.setAdSizes(AdSize.FULL_BANNER);
 
-        } else if (size.equals("AdSize.LEADERBOARD")) {
+        } else if (size.equals("728x90")) {
             publisherAdView.setAdSizes(AdSize.LEADERBOARD);
 
         }
@@ -305,113 +308,207 @@ public class GDad{
         getRelativeLayoutContainer().setLayoutParams(params);
     }
 
-    public void showInterstitialAd(){
+    public void showInterstitialAd() {
         if (mInterstitialAd != null && mInterstitialAd.isLoaded()) {
             mInterstitialAd.show();
         }
     }
-    public void showBanner(String args){
 
-        if(!GDbanner.bannerData.enable){
+    public void showBanner(String args) {
+
+        if (!GDGameData.enableAds && !GDstatic.testAds) {
             return;
         }
 
         Gson gson = new Gson();
         final GDshowObj gDshowObj;
         gDshowObj = gson.fromJson(args, GDshowObj.class);
-        arguments = gDshowObj;
 
-        GDutils.log("size: "+gDshowObj.size);
-        GDutils.log("alignment: "+gDshowObj.alignment);
-        GDutils.log("position: "+gDshowObj.position);
-
-
-        gDgdp.request(new GDCallback(){
-            @Override
-            public void callback(Object level) {
-                gdpLevel = (Integer) level ;
-                if(gDshowObj.isInterstitial){
-                    requestInterstitial(gdpLevel);
-                }
-                else{
-                    requestBanner(gdpLevel,gDshowObj.size,gDshowObj.alignment,gDshowObj.position);
-                }
+        if(GDstatic.testAds){
+            if(gDshowObj.isInterstitial){
+                this.setmUnitId(GDstatic.testInterUnitId);
+                requestInterstitial(null, GDstatic.testInterUnitId);
             }
-        });
-    }
-    public String getDeviceID() {
-        String android_id = Settings.Secure.getString(getmContext().getContentResolver(), Settings.Secure.ANDROID_ID);
-
-        if(android_id != null && android_id.length()>0){
-            return  md5(android_id).toUpperCase();
+            else{
+                this.setmUnitId(GDstatic.testBannerUnitId);
+                requestBanner(gDshowObj.size, gDshowObj.alignment, gDshowObj.position ,null, GDstatic.testBannerUnitId);
+            }
         }
         else{
-            return  md5("emulator").toUpperCase();
+
+            currentRequestInd = -1;
+            String bundleId = GDGameData.bundleId;
+            String msize = "interstitial";
+            if(!gDshowObj.isInterstitial) msize = gDshowObj.size;
+            String url = "http://pub.tunnl.com/oppm?bundleid=and."+bundleId+"&msize="+msize;
+
+            // getting unit id from tunnl for ad request
+            GDHttpRequest.sendHttpRequest(GDlogger.mContext, url, Request.Method.GET, null, new GDHttpCallback() {
+                @Override
+                public void onSuccess(JSONObject data) {
+                    try {
+                        JSONArray items = data.getJSONArray("Items");
+                        tunnlData = new ArrayList<>();
+                        GDTunnlData gdTunnlData;
+
+                        for(int i=0; i<items.length();i++){
+                            JSONObject object = (JSONObject) items.get(i);
+                            gdTunnlData = new GDTunnlData();
+                            gdTunnlData.setAdu(object.getString("Adu"));
+                            gdTunnlData.setErr(object.getString("Err"));
+                            gdTunnlData.setImp(object.getString("Imp"));
+
+                            JSONArray custom_params = object.getJSONArray("CustomParams");
+                            Bundle customParams = new Bundle();
+                            for(int j=0; j< custom_params.length();j++){
+                                JSONObject obj = (JSONObject) custom_params.get(j);
+                                customParams.putString(obj.getString("Key"),obj.getString("Value"));
+                            }
+                            gdTunnlData.setCustomParams(customParams);
+                            tunnlData.add(gdTunnlData);
+                        }
+
+                        if(items.length() > 0)
+                            requestHandler(gDshowObj);
+                        else{
+                            if (devListener != null)
+                                devListener.onBannerFailed("Something went wrong fetching advertisement settings. Please contact with support team.");
+                        }
+
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                        GDutils.log("Something went wrong parsing json tunnl data.\nData:\n"+data.toString());
+                    }
+                }
+                @Override
+                public void onError(VolleyError error) {
+                    GDutils.log("Something went wrong fetching unit id from tunnl.");
+
+                }
+            });
         }
     }
-    public String md5(String s) {
-        try {
-            // Create MD5 Hash
-            MessageDigest digest = java.security.MessageDigest.getInstance("MD5");
-            digest.update(s.getBytes());
-            byte messageDigest[] = digest.digest();
 
-            // Create Hex String
-            StringBuffer hexString = new StringBuffer();
-            for (int i=0; i<messageDigest.length; i++)
-                hexString.append(Integer.toHexString(0xFF & messageDigest[i]));
-            return hexString.toString();
+    private void requestHandler(final GDshowObj gDshowObj){
 
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
+        currentRequestInd ++;
+        GDTunnlData data = tunnlData.get(currentRequestInd);
+        if (gDshowObj.isInterstitial) {
+            requestInterstitial(data.getCustomParams(),data.getAdu());
+        } else {
+            requestBanner(gDshowObj.size, gDshowObj.alignment, gDshowObj.position, data.getCustomParams(), data.getAdu());
         }
-        return "";
+
+        gdRequestAdHandler = new GDRequestAdHandler() {
+            @Override
+            public void Succes() {
+                GDHttpRequest.sendStringRequest(GDlogger.mContext, tunnlData.get(currentRequestInd).getImp().replace("https", "http"), Request.Method.GET, null, new GDHttpCallback() {
+                    @Override
+                    public void onSuccess(JSONObject data) {
+                        GDutils.log("Imp");
+                    }
+
+                    @Override
+                    public void onError(VolleyError error) {
+                        GDutils.log("Imp error");
+                    }
+                });
+            }
+
+            @Override
+            public void Error(String err) {
+                
+                String url = tunnlData.get(currentRequestInd).getErr().replace("https","http");
+                GDHttpRequest.sendStringRequest(GDlogger.mContext, url, Request.Method.GET, null, new GDHttpCallback() {
+                    @Override
+                    public void onSuccess(JSONObject data) {
+                    }
+
+                    @Override
+                    public void onError(VolleyError error) {
+                    }
+                });
+
+                currentRequestInd ++;
+                if(tunnlData != null && tunnlData.size()>0 && currentRequestInd < tunnlData.size()){
+                    GDTunnlData data = tunnlData.get(currentRequestInd);
+
+                    if (gDshowObj.isInterstitial) {
+                        requestInterstitial(data.getCustomParams(),data.getAdu());
+                    } else {
+                        requestBanner(gDshowObj.size, gDshowObj.alignment, gDshowObj.position, data.getCustomParams(), data.getAdu());
+                    }
+                }
+                else{
+                    currentRequestInd = -1;
+                    tunnlData = null;
+
+                    if (devListener != null)
+                        devListener.onBannerFailed(err);
+
+                }
+
+            }
+        };
+
+
     }
-    public void destroyBanner(){
-        if(publisherAdView != null && bannerActive){
+
+    public void destroyBanner() {
+        if (publisherAdView != null && bannerActive) {
             publisherAdView.destroy();
             bannerActive = false;
         }
     }
-    public void setDeviceID(String deviceID) {
-        this.deviceID = deviceID;
-    }
-    public void setAdListener(GDadListener adListener){
+
+    public void setAdListener(GDadListener adListener) {
         this.devListener = adListener;
     }
+
     public PublisherInterstitialAd getmInterstitialAd() {
         return mInterstitialAd;
     }
+
     public void setmInterstitialAd(PublisherInterstitialAd mInterstitialAd) {
         this.mInterstitialAd = mInterstitialAd;
     }
+
     public Activity getmContext() {
         return mContext;
     }
+
     public void setmContext(Activity mContext) {
         this.mContext = mContext;
     }
+
     public String getmUnitId() {
         return mUnitId;
     }
+
     public void setmUnitId(String mUnitId) {
         this.mUnitId = mUnitId;
     }
+
     public PublisherAdView getPublisherAdView() {
         return publisherAdView;
     }
+
     public void setPublisherAdView(PublisherAdView publisherAdView) {
         this.publisherAdView = publisherAdView;
     }
+
     public FrameLayout getRootview() {
         return rootview;
     }
+
     public void setRootview(FrameLayout rootview) {
         this.rootview = rootview;
     }
+
     public RelativeLayout getRelativeLayoutContainer() {
         return relativeLayoutContainer;
     }
+
     public void setRelativeLayoutContainer(RelativeLayout relativeLayoutContainer) {
         this.relativeLayoutContainer = relativeLayoutContainer;
     }
