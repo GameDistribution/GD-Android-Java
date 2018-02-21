@@ -34,6 +34,9 @@ class GDbanner {
 
                             GDutils.log(data.toString());
                             GDlogger.gDad.init(GDlogger.mContext,GDlogger.isCordovaPlugin);
+
+                            GDlogger.gdPreloadStream.setPreloadStream(true);
+                            GDlogger.gdPreloadStream.init(GDlogger.mContext,GDlogger.isCordovaPlugin);
                         }
                         else{
                             String error = "Something went wrong fetching game data.";
@@ -137,6 +140,23 @@ class GDbanner {
         }
 
 
+    }
+
+    protected static void ShowPreloadedBanner(){
+
+        if(GDlogger.gdPreloadStream.isPreloadedAdExist())
+            GDlogger.gdPreloadStream.showInterstitialAd();
+        else if(!GDlogger.gdPreloadStream.isPreloadedAdLoading()){
+            if(GDlogger.gdPreloadStream.preloadListener != null){
+                GDlogger.gdPreloadStream.preloadListener.onPreloadFailed("No ads found preloaded.");
+            }
+            GDlogger.gdPreloadStream.requestPreloadAd();
+        }
+        else{
+            if(GDlogger.gdPreloadStream.preloadListener != null){
+                GDlogger.gdPreloadStream.preloadListener.onPreloadFailed("A preload ad is currently being loaded.");
+            }
+        }
     }
 
     private static void setAdTimer(final boolean isInterstitial) {

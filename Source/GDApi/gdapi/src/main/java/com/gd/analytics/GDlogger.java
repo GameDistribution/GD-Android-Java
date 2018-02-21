@@ -1,15 +1,13 @@
 package com.gd.analytics;
 
 import android.app.Activity;
-import android.content.Context;
-import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
 import android.util.Log;
 
 public class GDlogger {
 
     static Activity mContext;
     static GDad gDad = new GDad();
+    static GDad gdPreloadStream = new GDad();
 
     static boolean isCordovaPlugin = false;
 
@@ -115,11 +113,29 @@ public class GDlogger {
 
     }
 
+    public static void ShowPreloadedAd(){
+        if(GDutils.isOnline(mContext)){
+            if (GDstatic.enable) {
+                GDbanner.ShowPreloadedBanner();
+            } else {
+                Log.i("GDLogger", "GDApi is not initialized!");
+            }
+        }
+        else{
+            if(GDlogger.gdPreloadStream.preloadListener != null)
+                GDlogger.gdPreloadStream.preloadListener.onPreloadFailed("API cannot connect to internet. Please check the network connection.");
+        }
+    }
+
     public static void setAdListener(GDadListener gDadListener) {
         if (gDad != null)
             gDad.setAdListener(gDadListener);
     }
 
+    public static void setPreloadAdListener(GDPreloadListener preloadAdListener){
+        if(gdPreloadStream != null)
+            gdPreloadStream.setPreloadListener(preloadAdListener);
+    }
     /**
      * GDlogger hides banner
      */
