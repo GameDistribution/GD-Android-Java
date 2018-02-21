@@ -70,6 +70,8 @@ class GDbanner {
         }
         else if(GDstatic.testAds){
             GDlogger.gDad.init(GDlogger.mContext,GDlogger.isCordovaPlugin);
+            GDlogger.gdPreloadStream.setPreloadStream(true);
+            GDlogger.gdPreloadStream.init(GDlogger.mContext, GDlogger.isCordovaPlugin);
         }
     }
 
@@ -147,14 +149,14 @@ class GDbanner {
         if(GDlogger.gdPreloadStream.isPreloadedAdExist())
             GDlogger.gdPreloadStream.showInterstitialAd();
         else if(!GDlogger.gdPreloadStream.isPreloadedAdLoading()){
-            if(GDlogger.gdPreloadStream.preloadListener != null){
-                GDlogger.gdPreloadStream.preloadListener.onPreloadFailed("No ads found preloaded.");
+            if(GDlogger.gDad.devListener != null){
+                GDlogger.gDad.devListener.onPreloadFailed("No ads found preloaded.");
             }
             GDlogger.gdPreloadStream.requestPreloadAd();
         }
         else{
-            if(GDlogger.gdPreloadStream.preloadListener != null){
-                GDlogger.gdPreloadStream.preloadListener.onPreloadFailed("A preload ad is currently being loaded.");
+            if(GDlogger.gDad.devListener != null){
+                GDlogger.gDad.devListener.onPreloadFailed("A preload ad is currently being loaded.");
             }
         }
     }

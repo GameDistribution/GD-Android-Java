@@ -122,8 +122,8 @@ public class GDlogger {
             }
         }
         else{
-            if(GDlogger.gdPreloadStream.preloadListener != null)
-                GDlogger.gdPreloadStream.preloadListener.onPreloadFailed("API cannot connect to internet. Please check the network connection.");
+            if(GDlogger.gDad.devListener != null)
+                GDlogger.gDad.devListener.onPreloadFailed("API cannot connect to internet. Please check the network connection.");
         }
     }
 
@@ -132,10 +132,6 @@ public class GDlogger {
             gDad.setAdListener(gDadListener);
     }
 
-    public static void setPreloadAdListener(GDPreloadListener preloadAdListener){
-        if(gdPreloadStream != null)
-            gdPreloadStream.setPreloadListener(preloadAdListener);
-    }
     /**
      * GDlogger hides banner
      */

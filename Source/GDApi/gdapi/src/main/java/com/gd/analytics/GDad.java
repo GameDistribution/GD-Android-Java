@@ -28,7 +28,6 @@ import java.util.ArrayList;
 public class GDad {
 
     GDadListener devListener;
-    GDPreloadListener preloadListener;
     private PublisherInterstitialAd mInterstitialAd;
     private Activity mContext;
     private String mUnitId;
@@ -208,10 +207,10 @@ public class GDad {
                     devListener.onBannerClosed();
 
                 if(isPreloadStream){
-
+                    requestPreloadAd();
                 }
-                if(preloadListener != null){
-                    preloadListener.onPreloadedAdCompleted();
+                if(isPreloadStream && GDlogger.gDad.devListener != null){
+                    GDlogger.gDad.devListener.onPreloadedAdCompleted();
                 }
             }
 
@@ -274,8 +273,8 @@ public class GDad {
                 if(!GDstatic.testAds)
                     gdRequestAdHandler.Succes();
 
-                if(preloadListener != null){
-                    preloadListener.onAdPreloaded();
+                if(isPreloadStream && GDlogger.gDad.devListener != null){
+                    GDlogger.gDad.devListener.onAdPreloaded();
                 }
             }
         });
@@ -547,18 +546,12 @@ public class GDad {
     }
 
     public boolean isPreloadedAdExist(){
+        if (getmInterstitialAd() == null) return false;
         return getmInterstitialAd().isLoaded() && isPreloadStream();
     }
 
     public boolean isPreloadedAdLoading(){
+        if (getmInterstitialAd() == null) return false;
         return  getmInterstitialAd().isLoading() && isPreloadStream();
-    }
-
-    public GDPreloadListener getPreloadListener() {
-        return preloadListener;
-    }
-
-    public void setPreloadListener(GDPreloadListener preloadListener) {
-        this.preloadListener = preloadListener;
     }
 }
