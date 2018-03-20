@@ -152,7 +152,7 @@ public class GDad {
                     if (devListener != null && GDstatic.testAds){
                         devListener.onBannerFailed(error);
                     }
-                    else if(devListener != null && gdRequestAdHandler != null)
+                    else if(!GDstatic.testAds && gdRequestAdHandler != null)
                         gdRequestAdHandler.Error(error);
 
                 }
@@ -238,7 +238,7 @@ public class GDad {
                 if (devListener != null && GDstatic.testAds){
                     devListener.onBannerFailed(error);
                 }
-                else if(devListener != null && gdRequestAdHandler != null)
+                else if(!GDstatic.testAds && gdRequestAdHandler != null)
                     gdRequestAdHandler.Error(error);
 
             }

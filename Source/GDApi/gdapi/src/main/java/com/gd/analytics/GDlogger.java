@@ -97,7 +97,6 @@ public class GDlogger {
     }
 
     public static void ShowBanner(Boolean isInterstitial) {
-
         if(GDutils.isOnline(mContext)){
             String args = "{isInterstitial:" + isInterstitial + "}";
             if (GDstatic.enable) {
@@ -109,21 +108,6 @@ public class GDlogger {
         else{
             if(GDlogger.gDad.devListener != null)
                 GDlogger.gDad.devListener.onBannerFailed("API cannot connect to internet. Please check the network connection.");
-        }
-
-    }
-
-    public static void ShowPreloadedAd(){
-        if(GDutils.isOnline(mContext)){
-            if (GDstatic.enable) {
-                GDbanner.ShowPreloadedBanner();
-            } else {
-                Log.i("GDLogger", "GDApi is not initialized!");
-            }
-        }
-        else{
-            if(GDlogger.gDad.devListener != null)
-                GDlogger.gDad.devListener.onPreloadFailed("API cannot connect to internet. Please check the network connection.");
         }
     }
 

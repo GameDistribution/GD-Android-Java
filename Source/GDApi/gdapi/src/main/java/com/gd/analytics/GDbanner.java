@@ -13,15 +13,15 @@ class GDbanner {
 
     protected static void init() {
 
-        if(GDstatic.enable && !GDstatic.testAds) {
-            String url = GDstatic.GAME_API_URL+ '/' + GDstatic.gameId;
+        if (GDstatic.enable && !GDstatic.testAds) {
+            String url = GDstatic.GAME_API_URL + '/' + GDstatic.gameId;
             GDHttpRequest.sendHttpRequest(GDlogger.mContext, url, Request.Method.GET, null, new GDHttpCallback() {
                 @Override
                 public void onSuccess(JSONObject data) {
 
                     try {
                         boolean success = data.getBoolean("success");
-                        if(success) {
+                        if (success) {
                             JSONObject result = data.getJSONObject("result");
                             JSONObject game = result.getJSONObject("game");
 
@@ -33,16 +33,15 @@ class GDbanner {
                             GDGameData.bundleId = game.getString("androidBundleId");
 
                             GDutils.log(data.toString());
-                            GDlogger.gDad.init(GDlogger.mContext,GDlogger.isCordovaPlugin);
+                            GDlogger.gDad.init(GDlogger.mContext, GDlogger.isCordovaPlugin);
 
                             GDlogger.gdPreloadStream.setPreloadStream(true);
-                            GDlogger.gdPreloadStream.init(GDlogger.mContext,GDlogger.isCordovaPlugin);
-                        }
-                        else{
+                            GDlogger.gdPreloadStream.init(GDlogger.mContext, GDlogger.isCordovaPlugin);
+                        } else {
                             String error = "Something went wrong fetching game data.";
                             GDutils.log(error);
 
-                            if(GDlogger.gDad.devListener != null)
+                            if (GDlogger.gDad.devListener != null)
                                 GDlogger.gDad.devListener.onAPINotReady(error);
                             GDstatic.enable = false;
 
@@ -51,7 +50,7 @@ class GDbanner {
                     } catch (JSONException e) {
                         e.printStackTrace();
                         GDutils.log("Something went wrong parsing json game data.");
-                        if(GDlogger.gDad.devListener != null)
+                        if (GDlogger.gDad.devListener != null)
                             GDlogger.gDad.devListener.onAPINotReady("Something went wrong parsing json game data.");
                         GDstatic.enable = false;
 
@@ -61,15 +60,14 @@ class GDbanner {
                 @Override
                 public void onError(VolleyError error) {
                     GDutils.log("Something went wrong fetching json game data.");
-                    if(GDlogger.gDad.devListener != null)
+                    if (GDlogger.gDad.devListener != null)
                         GDlogger.gDad.devListener.onAPINotReady("Something went wrong fetching json game data.");
                     GDstatic.enable = false;
 
                 }
             });
-        }
-        else if(GDstatic.testAds){
-            GDlogger.gDad.init(GDlogger.mContext,GDlogger.isCordovaPlugin);
+        } else if (GDstatic.testAds) {
+            GDlogger.gDad.init(GDlogger.mContext, GDlogger.isCordovaPlugin);
             GDlogger.gdPreloadStream.setPreloadStream(true);
             GDlogger.gdPreloadStream.init(GDlogger.mContext, GDlogger.isCordovaPlugin);
         }
@@ -81,11 +79,12 @@ class GDbanner {
         final GDshowObj gDshowObj;
         gDshowObj = gson.fromJson(args, GDshowObj.class);
 
-
         if ((GDGameData.enableAds || GDstatic.testAds) && gDshowObj._key != null && gDshowObj._key.equals("preroll") && GDlogger.gDad != null) {
 
             if (GDGameData.preRoll) {
-                GDlogger.gDad.showBanner(args);
+
+                ShowPreloadedBanner(args);
+
             } else {
                 if (GDlogger.gDad.devListener != null) {
                     GDlogger.gDad.devListener.onBannerFailed("Banner request failed: 'Preroll is disabled.'");
@@ -98,14 +97,13 @@ class GDbanner {
                 if (gDshowObj.isInterstitial) {
                     if (GDstatic.reqInterstitialEnabled) {
 
-                        GDlogger.gDad.showBanner(args);
+                        ShowPreloadedBanner(args);
                         adInterstitialTimer = null;
 
-                        if(!GDstatic.testAds){
+                        if (!GDstatic.testAds) {
                             setAdTimer(true); // inter timer
                             GDstatic.reqInterstitialEnabled = false;
-                        }
-                        else{
+                        } else {
                             GDstatic.reqInterstitialEnabled = true;
                         }
 
@@ -115,12 +113,11 @@ class GDbanner {
                             GDlogger.gDad.devListener.onBannerFailed("You can not invoke 'ShowBanner()' within " + GDGameData.timeAds + " min(s).");
                         }
                     }
-                }
-                else {
+                } else {
                     if (GDstatic.reqBannerEnabled) {
                         GDlogger.gDad.showBanner(args);
                         adBannerTimer = null;
-                        if(!GDstatic.testAds){
+                        if (!GDstatic.testAds) {
                             setAdTimer(false); // banner timer
                             GDstatic.reqBannerEnabled = false;
                         }
@@ -137,6 +134,7 @@ class GDbanner {
                 if (GDlogger.gDad.devListener != null) {
                     GDlogger.gDad.devListener.onBannerFailed("Banner request failed: 'Midroll is disabled.'");
                 }
+
             }
 
         }
@@ -144,20 +142,24 @@ class GDbanner {
 
     }
 
-    protected static void ShowPreloadedBanner(){
-
-        if(GDlogger.gdPreloadStream.isPreloadedAdExist())
+    protected static void ShowPreloadedBanner(String args) {
+        // If preloaded ad exists, then show it.
+        // Otherwise, make sure you request preload and also request new ad to show.
+        if (GDlogger.gdPreloadStream.isPreloadedAdExist()){
             GDlogger.gdPreloadStream.showInterstitialAd();
-        else if(!GDlogger.gdPreloadStream.isPreloadedAdLoading()){
-            if(GDlogger.gDad.devListener != null){
-                GDlogger.gDad.devListener.onPreloadFailed("No ads found preloaded.");
-            }
-            GDlogger.gdPreloadStream.requestPreloadAd();
         }
         else{
-            if(GDlogger.gDad.devListener != null){
-                GDlogger.gDad.devListener.onPreloadFailed("A preload ad is currently being loaded.");
+            if (!GDlogger.gdPreloadStream.isPreloadedAdLoading()) {
+                if (GDlogger.gDad.devListener != null) {
+                    GDlogger.gDad.devListener.onPreloadFailed("No ads found preloaded.");
+                }
+                GDlogger.gdPreloadStream.requestPreloadAd();
+            } else {
+                if (GDlogger.gDad.devListener != null) {
+                    GDlogger.gDad.devListener.onPreloadFailed("A preload ad is currently being loaded.");
+                }
             }
+            GDlogger.gDad.showBanner(args);
         }
     }
 
