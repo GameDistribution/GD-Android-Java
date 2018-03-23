@@ -1,15 +1,13 @@
 package com.gd.analytics;
 
 import android.app.Activity;
-import android.content.Context;
-import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
 import android.util.Log;
 
 public class GDlogger {
 
     static Activity mContext;
     static GDad gDad = new GDad();
+    static GDad gdPreloadStream = new GDad();
 
     static boolean isCordovaPlugin = false;
 
@@ -99,7 +97,6 @@ public class GDlogger {
     }
 
     public static void ShowBanner(Boolean isInterstitial) {
-
         if(GDutils.isOnline(mContext)){
             String args = "{isInterstitial:" + isInterstitial + "}";
             if (GDstatic.enable) {
@@ -112,7 +109,6 @@ public class GDlogger {
             if(GDlogger.gDad.devListener != null)
                 GDlogger.gDad.devListener.onBannerFailed("API cannot connect to internet. Please check the network connection.");
         }
-
     }
 
     public static void setAdListener(GDadListener gDadListener) {

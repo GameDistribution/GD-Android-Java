@@ -18,5 +18,11 @@ public abstract class GDadListener {
     }
     public void onAPINotReady(String error){
     }
+    public void onPreloadedAdCompleted() {
+    }
+    public void onAdPreloaded() {
+    }
+    public void onPreloadFailed(String msg) {
+    }
 
 }

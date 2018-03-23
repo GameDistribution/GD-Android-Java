@@ -35,6 +35,7 @@ public class GDad {
     private FrameLayout rootview;
     private RelativeLayout relativeLayoutContainer;
     private boolean bannerActive = false;
+    private boolean isPreloadStream = false;
     ArrayList<GDTunnlData> tunnlData;
     private int currentRequestInd = -1;
     private GDRequestAdHandler gdRequestAdHandler;
@@ -46,6 +47,8 @@ public class GDad {
 
         if (devListener != null) devListener.onAPIReady();
 
+        requestPreloadAd();
+
     }
 
     public void init(Activity mContext, boolean isCordovaPlugin) {
@@ -55,6 +58,7 @@ public class GDad {
 
             if (devListener != null) devListener.onAPIReady();
 
+            requestPreloadAd();
 
         } else {
             init(mContext);
@@ -148,7 +152,7 @@ public class GDad {
                     if (devListener != null && GDstatic.testAds){
                         devListener.onBannerFailed(error);
                     }
-                    else if(devListener != null && gdRequestAdHandler != null)
+                    else if(!GDstatic.testAds && gdRequestAdHandler != null)
                         gdRequestAdHandler.Error(error);
 
                 }
@@ -201,6 +205,13 @@ public class GDad {
                 GDutils.log("Ad closed.");
                 if (devListener != null)
                     devListener.onBannerClosed();
+
+                if(isPreloadStream){
+                    requestPreloadAd();
+                }
+                if(isPreloadStream && GDlogger.gDad.devListener != null){
+                    GDlogger.gDad.devListener.onPreloadedAdCompleted();
+                }
             }
 
             @Override
@@ -227,7 +238,7 @@ public class GDad {
                 if (devListener != null && GDstatic.testAds){
                     devListener.onBannerFailed(error);
                 }
-                else if(devListener != null && gdRequestAdHandler != null)
+                else if(!GDstatic.testAds && gdRequestAdHandler != null)
                     gdRequestAdHandler.Error(error);
 
             }
@@ -248,7 +259,9 @@ public class GDad {
             public void onAdLoaded() {
                 super.onAdLoaded();
                 GDutils.log("Ad received.");
-                showInterstitialAd();
+
+                if(!isPreloadStream())
+                    showInterstitialAd();
 
                 GDEvent gdEvent = new GDEvent();
                 gdEvent.isInterstitial = true;
@@ -259,6 +272,10 @@ public class GDad {
 
                 if(!GDstatic.testAds)
                     gdRequestAdHandler.Succes();
+
+                if(isPreloadStream && GDlogger.gDad.devListener != null){
+                    GDlogger.gDad.devListener.onAdPreloaded();
+                }
             }
         });
         mInterstitialAd.loadAd(adRequest);
@@ -417,7 +434,7 @@ public class GDad {
 
             @Override
             public void Error(String err) {
-                
+
                 String url = tunnlData.get(currentRequestInd).getErr().replace("https","http");
                 GDHttpRequest.sendStringRequest(GDlogger.mContext, url, Request.Method.GET, null, new GDHttpCallback() {
                     @Override
@@ -452,6 +469,13 @@ public class GDad {
         };
 
 
+    }
+
+    public void requestPreloadAd(){
+        if(isPreloadStream()){
+            String args = "{isInterstitial: true}";
+            showBanner(args);
+        }
     }
 
     public void destroyBanner() {
@@ -513,4 +537,21 @@ public class GDad {
         this.relativeLayoutContainer = relativeLayoutContainer;
     }
 
+    public boolean isPreloadStream() {
+        return isPreloadStream;
+    }
+
+    public void setPreloadStream(boolean preloadStream) {
+        isPreloadStream = preloadStream;
+    }
+
+    public boolean isPreloadedAdExist(){
+        if (getmInterstitialAd() == null) return false;
+        return getmInterstitialAd().isLoaded() && isPreloadStream();
+    }
+
+    public boolean isPreloadedAdLoading(){
+        if (getmInterstitialAd() == null) return false;
+        return  getmInterstitialAd().isLoading() && isPreloadStream();
+    }
 }
